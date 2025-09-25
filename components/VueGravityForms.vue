@@ -44,7 +44,7 @@ const formPages = ref([]);
 if (endpoint) {
   try {
     const url = new URL(endpoint);
-    endpoint = url.origin + url.pathname.replace(/\/+$/, ''); // Remove trailing slashes
+    endpoint = url.origin;
   } catch (e) {
     console.error('Invalid endpoint URL:', endpoint);
     throw new Error('Invalid endpoint URL');

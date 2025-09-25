@@ -1,0 +1,51 @@
+{
+  "name": "@970design/vue-gravity-forms",
+  "version": "1.0.1",
+  "description": "A Vue component for interacting with the Gravity Forms REST API",
+  "keywords": [
+    "vue",
+    "gravity",
+    "forms",
+    "wordpress",
+    "headless",
+    "rest",
+    "api"
+  ],
+  "author": "970Design",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/970Design/vue-gravity-forms/issues"
+  },
+  "homepage": "https://github.com/970Design/vue-gravity-forms#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/970Design/vue-gravity-forms.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "vite build"
+  },
+  "main": "./dist/vue-gravity-forms.umd.js",
+  "module": "./dist/vue-gravity-forms.es.js",
+  "types": "./vue-gravity-forms.d.ts",
+  "exports": {
+    ".": {
+      "types": "./vue-gravity-forms.d.ts",
+      "import": "./dist/vue-gravity-forms.es.js",
+      "require": "./dist/vue-gravity-forms.umd.js"
+    }
+  },
+  "files": [
+    "dist",
+    "vue-gravity-forms.d.ts"
+  ],
+  "dependencies": {
+    "vue": "^3.5.21",
+    "vue-recaptcha-v3": "^2.0.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "vite": "^7.1.5"
+  }
+}

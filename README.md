@@ -1,6 +1,6 @@
 # What is Vue Gravity Forms?
 
-Vue Gravity Forms is a [Vue](https://vuejs.org/) 3 component which allows you to render and process [Gravity Forms](https://www.gravityforms.com/) in a headless [WordPress](https://wordpress.org/) environment via the Gravity Forms REST API.  This component will work in any environment where Vue is supported (such as [Astro.js](https://astro.build/)).  Currently, it supports all Basic and Advanced field types, confirmation messages and redirects, file uploads, multipage forms, and (optionally) Google reCAPTCHA v3.
+Vue Gravity Forms is a [Vue](https://vuejs.org/) 3 component which allows you to render and process [Gravity Forms](https://www.gravityforms.com/) in a headless [WordPress](https://wordpress.org/) environment via the Companion [WordPress Plugin](https://github.com/970Design/nsz-vue-gravity-forms-plugin).  This component will work in any environment where Vue is supported (such as [Astro.js](https://astro.build/)).  Currently, it supports all Basic and Advanced field types, confirmation messages and redirects, file uploads, multipage forms, and (optionally) Google reCAPTCHA v3.
 
 ## Setup Guide
 

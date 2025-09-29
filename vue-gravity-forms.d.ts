@@ -4,8 +4,7 @@ declare module '@/components/VueGravityForms.vue' {
     export interface VueGravityFormsProps {
         endpoint: string;
         formId: number;
-        wpAppPassword: string;
-        wpUsername: string;
+        apiKey: string;
         recaptchaKey?: string;
     }
 

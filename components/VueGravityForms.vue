@@ -14,33 +14,43 @@ import SectionBreakField from "./form/SectionBreakField.vue";
 import AddressField from "./form/AddressField.vue";
 import ImageChoiceField from "./form/ImageChoiceField.vue";
 
-const props = defineProps([
-  'endpoint',
-  'formId',
-  'wpAppPassword',
-  'wpUsername',
-  'recaptchaKey' // optional prop for reCAPTCHA site key
-]);
+const props = defineProps({
+  endpoint: {
+    type: String,
+    required: true
+  },
+  formId: {
+    type: [String, Number],
+    required: true
+  },
+  apiKey: {
+    type: String,
+    required: false
+  },
+  recaptchaKey: {
+    type: String,
+    required: false
+  }
+});
 
 let endpoint = props.endpoint;
-const wpUsername = props.wpUsername;
-const wpAppPassword = props.wpAppPassword;
 const formId = props.formId;
-const recaptchaKey = props.recaptchaKey; // optional reCAPTCHA key
+const apiKey = props.apiKey;
+const recaptchaKey = props.recaptchaKey;
 const form = ref(null);
 const formData = ref({});
 const loading = ref(false);
 const successMessage = ref("");
 const errorMessage = ref("");
 const fieldErrors = reactive({});
-const showForm = ref(true); // Control form visibility for confirmations
+const showForm = ref(true);
 
 // Multi-step functionality
 const currentPage = ref(1);
 const totalPages = ref(1);
 const formPages = ref([]);
 
-//validation and normalization of endpoint URL
+// Validation and normalization of endpoint URL
 if (endpoint) {
   try {
     const url = new URL(endpoint);
@@ -54,27 +64,27 @@ if (endpoint) {
   throw new Error('No endpoint provided');
 }
 
-//validate WP credentials
-const validCredentialPattern = /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~ ]+$/;
-if (!wpUsername || !validCredentialPattern.test(wpUsername)) {
-  console.error('Invalid or missing WP Username.');
-  throw new Error('Invalid or missing WP Username.');
-}
-if (!wpAppPassword || !validCredentialPattern.test(wpAppPassword)) {
-  console.error('Invalid or missing WP Application Password.');
-  throw new Error('Invalid or missing WP Application Password.');
-}
+// Create headers for API requests
+const getApiHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json'
+  };
 
-// Create proper Basic Auth headers
-const getAuthHeaders = () => {
+  // Add API key if provided
+  if (apiKey) {
+    headers['X-API-Key'] = apiKey;
+  }
+
+  return headers;
+};
+
+// Get headers for form submission (multipart/form-data)
+const getSubmissionHeaders = () => {
   const headers = {};
 
-  if (wpUsername && wpAppPassword) {
-    const authString = `${wpUsername}:${wpAppPassword}`;
-    headers["Authorization"] = `Basic ${btoa(authString)}`;
-  } else {
-    console.warn('No authentication credentials found.');
-    throw new Error('No authentication credentials found.');
+  // Add API key if provided (don't set Content-Type for FormData)
+  if (apiKey) {
+    headers['X-API-Key'] = apiKey;
   }
 
   return headers;
@@ -88,7 +98,6 @@ const organizeFieldsIntoPages = (fields) => {
 
   fields.forEach(field => {
     if (field.type === 'page') {
-      // If we have accumulated fields, create a page
       if (currentPageFields.length > 0) {
         pages.push({
           pageNumber: pages.length + 1,
@@ -97,15 +106,12 @@ const organizeFieldsIntoPages = (fields) => {
         });
         currentPageFields = [];
       }
-
-      // Set the page break for the next page
       currentPageBreak = field;
     } else {
       currentPageFields.push(field);
     }
   });
 
-  // Add remaining fields to the last page
   if (currentPageFields.length > 0) {
     pages.push({
       pageNumber: pages.length + 1,
@@ -114,7 +120,6 @@ const organizeFieldsIntoPages = (fields) => {
     });
   }
 
-  // If no pages were created (no fields), create a default empty page
   if (pages.length === 0) {
     pages.push({
       pageNumber: 1,
@@ -151,11 +156,9 @@ const isFirstPage = computed(() => {
 // Get next button text
 const nextButtonText = computed(() => {
   if (isLastPage.value) {
-    // On last page, use form submit button text or default to 'Submit'
     return form.value?.button?.text || 'Submit';
   }
 
-  // For non-last pages, check if current page break has custom next button text
   const pageBreak = currentPageBreak.value;
   if (pageBreak?.nextButton?.text) {
     return pageBreak.nextButton.text;
@@ -197,7 +200,6 @@ const validateCurrentPage = () => {
       if (Array.isArray(fieldValue)) {
         isEmpty = fieldValue.length === 0;
       } else if (typeof fieldValue === 'object' && fieldValue !== null) {
-        // Address fields
         isEmpty = Object.keys(fieldValue).length === 0 ||
             Object.values(fieldValue).every(val => !val);
       } else {
@@ -217,7 +219,6 @@ const validateCurrentPage = () => {
 // Navigate to next page
 const nextPage = () => {
   if (isLastPage.value) {
-    // Submit the form
     submitForm();
     return;
   }
@@ -238,11 +239,9 @@ const previousPage = () => {
   }
 };
 
-// Navigate to specific page (for progress indicator)
+// Navigate to specific page
 const goToPage = (pageNumber) => {
   if (pageNumber >= 1 && pageNumber <= totalPages.value) {
-    // Only allow navigation to previous pages or current page
-    // To go to future pages, validate all previous pages
     if (pageNumber <= currentPage.value) {
       currentPage.value = pageNumber;
       scrollToFormTop();
@@ -268,12 +267,12 @@ const progressPercentage = computed(() => {
   return Math.round((currentPage.value / totalPages.value) * 100);
 });
 
-// Fetch form schema
+// Fetch form schema using the new secure endpoint
 const fetchForm = async () => {
   try {
-    const response = await fetch(`${endpoint}/wp-json/gf/v2/forms/${formId}`, {
+    const response = await fetch(`${endpoint}/wp-json/gf-headless/v1/forms/${formId}`, {
       method: 'GET',
-      headers: getAuthHeaders(),
+      headers: getApiHeaders(),
     });
 
     if (!response.ok) {
@@ -300,28 +299,24 @@ const fetchForm = async () => {
     // Initialize form data
     const initialData = {};
     form.value.fields.forEach(field => {
-      if (field.type === 'page') return; // Skip page fields
+      if (field.type === 'page') return;
 
       const fieldKey = `input_${field.id}`;
 
       if (isCheckboxFieldType(field.type) || isMultiselectFieldType(field.type)) {
-        // Special handling for consent fields - they expect string values, not arrays
         if (field.type === 'consent') {
           initialData[fieldKey] = "";
         } else {
           initialData[fieldKey] = [];
         }
       } else if (isFileUploadFieldType(field.type)) {
-        // Set file upload fields to null instead of empty string
         initialData[fieldKey] = null;
       } else if (isAddressFieldType(field.type)) {
-        // Initialize address fields as objects
         initialData[fieldKey] = {};
       } else {
         initialData[fieldKey] = "";
       }
 
-      // Handle "other" values for checkbox/radio fields
       if (field.enableOtherChoice) {
         initialData[`${fieldKey}_other`] = "";
       }
@@ -339,7 +334,6 @@ const handleConfirmation = (response) => {
   const confirmation = form.value.confirmations ? Object.values(form.value.confirmations)[0] : null;
 
   if (!confirmation) {
-    // Fallback to default message
     successMessage.value = response.message || "Form submitted successfully!";
     showForm.value = false;
     return;
@@ -347,27 +341,23 @@ const handleConfirmation = (response) => {
 
   switch (confirmation.type) {
     case 'message':
-      // Display custom message
       successMessage.value = confirmation.message || response.message || "Form submitted successfully!";
       showForm.value = false;
       break;
 
     case 'redirect':
     case 'page':
-      // Redirect to specified URL
       if (confirmation.url) {
         setTimeout(() => {
           window.location.href = confirmation.url;
         }, 500);
       } else {
-        // Fallback if no URL specified
         successMessage.value = response.message || "Form submitted successfully!";
         showForm.value = false;
       }
       break;
 
     default:
-      // Default behavior
       successMessage.value = response.message || "Form submitted successfully!";
       showForm.value = false;
   }
@@ -377,30 +367,27 @@ const handleConfirmation = (response) => {
 const resetForm = () => {
   const resetData = {};
   form.value.fields.forEach(field => {
-    if (field.type === 'page') return; // Skip page fields
+    if (field.type === 'page') return;
 
     const fieldKey = `input_${field.id}`;
 
     if (isCheckboxFieldType(field.type) || isMultiselectFieldType(field.type)) {
       resetData[fieldKey] = [];
     } else if (isFileUploadFieldType(field.type)) {
-      // Set file upload fields to null instead of empty string
       resetData[fieldKey] = null;
     } else if (isAddressFieldType(field.type)) {
-      // Reset address fields as empty objects
       resetData[fieldKey] = {};
     } else {
       resetData[fieldKey] = "";
     }
 
-    // Reset "other" values too
     if (field.enableOtherChoice) {
       resetData[`${fieldKey}_other`] = "";
     }
   });
   formData.value = resetData;
 
-  // Reset file inputs manually (Vue doesn't reset file inputs automatically)
+  // Reset file inputs manually
   form.value.fields.forEach(field => {
     if (isFileUploadFieldType(field.type)) {
       const fileInput = document.querySelector(`#input_${formId}_${field.id}`);
@@ -410,7 +397,6 @@ const resetForm = () => {
     }
   });
 
-  // Reset to first page
   currentPage.value = 1;
 };
 
@@ -436,7 +422,6 @@ const scrollToFirstError = () => {
         }
       }
     } else if (errorMessage.value) {
-      // If no field-specific errors but general error, scroll to form top
       const formElement = document.querySelector(`#gform_${formId}`);
       if (formElement) {
         formElement.scrollIntoView({
@@ -448,7 +433,7 @@ const scrollToFirstError = () => {
   });
 };
 
-// Submit form (internal function)
+// Submit form using the new secure endpoint
 const performFormSubmission = async () => {
   loading.value = true;
   errorMessage.value = "";
@@ -459,14 +444,41 @@ const performFormSubmission = async () => {
 
   // Handle form data submission
   Object.entries(formData.value).forEach(([fieldKey, fieldValue]) => {
+    const fieldId = fieldKey.replace('input_', '');
+    const field = form.value.fields.find(f => f.id == fieldId);
+
+    // Skip "other" fields in this loop (handle separately below)
+    if (fieldKey.includes('_other')) {
+      return;
+    }
+
+    // Handle file uploads FIRST
+    if (field && isFileUploadFieldType(field.type)) {
+      // Check if this is a multi-file upload field
+      const isMultiFile = field.multipleFiles === true || field.multipleFiles === 1;
+
+      if (isMultiFile) {
+        // Multi-file upload - append with array notation
+        if (Array.isArray(fieldValue) && fieldValue.length > 0) {
+          fieldValue.forEach((file, index) => {
+            if (file instanceof File) {
+              // Append each file with array index notation to mimic HTML file input behavior
+              fd.append(`${fieldKey}[${index}]`, file, file.name);
+            }
+          });
+        }
+      } else {
+        // Single file upload
+        if (fieldValue && fieldValue instanceof File) {
+          fd.append(fieldKey, fieldValue, fieldValue.name);
+        }
+      }
+      return; // Skip other processing for file fields
+    }
+
+    // Handle arrays (checkboxes, multiselect)
     if (Array.isArray(fieldValue)) {
-      const fieldId = fieldKey.replace('input_', '');
-
-      // Find the corresponding field definition
-      const field = form.value.fields.find(f => f.id == fieldId);
-
       if (field && isCheckboxFieldType(field.type)) {
-        // Checkboxes must use indexed input_{id}_{n}
         fieldValue.forEach(selectedValue => {
           const choiceIndex = field.choices.findIndex(choice => choice.value === selectedValue);
           if (choiceIndex !== -1) {
@@ -475,19 +487,14 @@ const performFormSubmission = async () => {
           }
         });
       } else if (field && isMultiselectFieldType(field.type)) {
-        // Multi-select should just append array values as input_{id}[]
         fieldValue.forEach(selectedValue => {
           fd.append(`input_${fieldId}[]`, selectedValue);
         });
       }
-    } else if (typeof fieldValue === 'object' && fieldValue !== null && !Array.isArray(fieldValue)) {
-      // Handle address fields (objects)
-      const fieldId = fieldKey.replace('input_', '');
-      const field = form.value.fields.find(f => f.id == fieldId);
-
+    }
+    // Handle address objects
+    else if (typeof fieldValue === 'object' && fieldValue !== null && !Array.isArray(fieldValue)) {
       if (field && isAddressFieldType(field.type)) {
-        // Address fields use specific input IDs based on Gravity Forms structure
-        // input_{fieldId}_1 = street, input_{fieldId}_2 = street2, etc.
         const addressMapping = {
           street: '1',
           street2: '2',
@@ -503,21 +510,15 @@ const performFormSubmission = async () => {
           }
         });
       }
-    } else if (fieldValue !== null && fieldValue !== undefined && fieldValue !== '') {
-      // Handle regular fields including consent fields
-      const fieldId = fieldKey.replace('input_', '');
-      const field = form.value.fields.find(f => f.id == fieldId);
-
+    }
+    // Handle simple values (text, textarea, select, radio, etc.)
+    else if (fieldValue !== null && fieldValue !== undefined && fieldValue !== '') {
       if (field && field.type === 'consent') {
-        // Consent fields use a specific format: input_{id}.1
         fd.append(`input_${fieldId}.1`, fieldValue);
-
-        // Also send the consent text for entry display
         if (fieldValue === '1') {
           fd.append(`input_${fieldId}.2`, field.checkboxLabel || field.label || '');
         }
       } else {
-        // Handle other regular fields (text, select, radio, etc.)
         fd.append(fieldKey, fieldValue);
       }
     }
@@ -531,19 +532,19 @@ const performFormSubmission = async () => {
   });
 
   try {
-    const response = await fetch(`${endpoint}/wp-json/gf/v2/forms/${formId}/submissions`, {
+    const response = await fetch(`${endpoint}/wp-json/gf-headless/v1/forms/${formId}/submit`, {
       method: "POST",
-      headers: getAuthHeaders(),
+      headers: getSubmissionHeaders(),
       body: fd,
     });
 
     const responseText = await response.text();
-
     let data;
     try {
       data = JSON.parse(responseText);
     } catch (parseError) {
       console.error('Failed to parse JSON response:', parseError);
+      console.error('Response text that failed to parse:', responseText);
       throw new Error(`Invalid JSON response: ${responseText}`);
     }
 
@@ -676,6 +677,7 @@ onMounted(() => {
   fetchForm();
 });
 </script>
+
 
 <template>
   <div class="gravity-form" :class="`gform_wrapper gform_wrapper_${formId}`">
@@ -964,3 +966,513 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+
+<style>
+/* Variables */
+:root {
+  --gf-primary-color: #204ce5;
+  --gf-error-color: #dc3545;
+  --gf-success-color: #d4edda;
+  --gf-border-color: #ddd;
+  --gf-background-color: #fff;
+  --gf-disabled-color: #999;
+}
+
+/* Base Form Styles */
+.gravity-form {
+  font-family: inherit;
+}
+
+.gform_wrapper {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.gform_heading {
+  margin-bottom: 1rem;
+}
+
+.gform_heading .gform_title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.2;
+}
+
+.gform_heading .gform_description {
+  margin: 0 0 1rem 0;
+  line-height: 1.4;
+}
+
+.gform_body {
+  margin-bottom: 1rem;
+}
+
+.gform_body .gform_fields {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Button Styles */
+.gform_footer,
+.gform_confirmation_actions {
+  text-align: center;
+  margin-top: 1.25rem;
+}
+
+.gform_footer .gform_button,
+.gform_confirmation_actions .gform_button {
+  background: var(--gf-primary-color);
+  color: var(--gf-background-color);
+  border: 1px solid var(--gf-primary-color);
+  border-radius: 3px;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gform_footer .gform_button:hover:not(:disabled),
+.gform_confirmation_actions .gform_button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.gform_footer .gform_button:disabled,
+.gform_confirmation_actions .gform_button:disabled {
+  background: var(--gf-disabled-color);
+  border-color: var(--gf-disabled-color);
+  cursor: not-allowed;
+}
+
+/* Messages */
+.gform_confirmation_wrapper {
+  background: var(--gf-background-color);
+  border: 1px solid var(--gf-background-color);
+  padding: 1rem;
+  border-radius: 3px;
+  margin-bottom: 1rem;
+}
+
+.gform_confirmation_message {
+  padding: 20px;
+  background-color: var(--gf-success-color);
+}
+
+.gform_validation_errors {
+  background: var(--gf-background-color);
+  border: 1px solid var(--gf-background-color);
+  color: var(--gf-error-color);
+  padding: 1rem;
+  border-radius: 3px;
+  margin-bottom: 1rem;
+}
+
+.gform_validation_errors .gform_submission_error {
+  font-weight: 600;
+}
+
+.hide_summary {
+  display: none;
+}
+
+/* Field Styles */
+.gfield {
+  margin: 0 0 1rem 0;
+  padding: 0;
+  list-style-type: none;
+  clear: both;
+}
+
+.gfield .gfield_label {
+  display: block;
+  margin: 0 0 0.25rem 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Hidden Label Styles */
+.field_hidden_label > .gfield_label,
+.field_hidden_label > legend.gfield_label {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.field_hidden_label > .ginput_container {
+  margin-top: 0;
+}
+
+/* Consent Field Special Handling */
+.field_hidden_label.gfield_contains_consent .gfield_consent_description {
+  position: static;
+  left: auto;
+  top: auto;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  display: block;
+}
+
+/* Required Field Indicators */
+.gfield_required {
+  color: var(--gf-error-color);
+}
+
+.gfield_required_asterisk {
+  color: var(--gf-error-color);
+  margin-left: 0.25rem;
+}
+
+/* Input Container Spacing */
+.ginput_container {
+  margin-top: 0.25rem;
+}
+
+/* Validation Message */
+.gfield_validation_message {
+  color: var(--gf-error-color);
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-top: 0.25rem;
+  line-height: 1.3;
+}
+
+/* Field Description */
+.gfield_description {
+  font-size: 0.875rem;
+  line-height: 1.3;
+  margin-top: 0.25rem;
+}
+
+.gfield_description_above_input {
+  margin-bottom: 0.25rem;
+  margin-top: 0;
+}
+
+/* Error States */
+.gfield_error .gfield_label {
+  color: var(--gf-error-color);
+}
+
+.gfield_error input,
+.gfield_error textarea,
+.gfield_error select {
+  border-color: var(--gf-error-color);
+}
+
+.gfield_error input:focus,
+.gfield_error textarea:focus,
+.gfield_error select:focus {
+  border-color: var(--gf-error-color);
+  box-shadow: 0 0 0 1px var(--gf-error-color);
+}
+
+/* Hidden Fields */
+.gfield_visibility_hidden,
+.gfield_visibility_administrative {
+  display: none;
+}
+
+/* Section Break */
+.gsection {
+  margin: 30px 0;
+  padding: 0;
+  border: none;
+}
+
+/* Base Input Styles */
+.ginput_container input[type="text"],
+.ginput_container input[type="email"],
+.ginput_container input[type="tel"],
+.ginput_container input[type="url"],
+.ginput_container input[type="password"],
+.ginput_container input[type="number"],
+.ginput_container input[type="date"],
+.ginput_container input[type="time"],
+.ginput_container textarea,
+.ginput_container select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--gf-border-color);
+  border-radius: 3px;
+  background-color: var(--gf-background-color);
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.ginput_container input:focus,
+.ginput_container textarea:focus,
+.ginput_container select:focus {
+  border-color: var(--gf-primary-color);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--gf-primary-color);
+}
+
+.ginput_container input:disabled,
+.ginput_container textarea:disabled,
+.ginput_container select:disabled {
+  background-color: var(--gf-background-color);
+  color: var(--gf-disabled-color);
+  cursor: not-allowed;
+}
+
+/* Address Field */
+.ginput_container_address {
+  display: grid;
+  grid-template-columns: 100%;
+  gap: 0.75rem 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .ginput_container_address {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Textarea Specific Styles */
+.ginput_container_textarea textarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.4;
+}
+
+.ginput_container_textarea textarea::placeholder {
+  opacity: 0.6;
+}
+
+@media (max-width: 767px) {
+  .ginput_container_textarea textarea {
+    min-height: 100px;
+  }
+}
+
+/* Character Counter */
+.ginput_counter {
+  font-size: 0.75rem;
+  text-align: right;
+  margin-top: 0.25rem;
+  opacity: 0.6;
+}
+
+.ginput_counter.over_limit {
+  color: var(--gf-error-color);
+  opacity: 1;
+}
+
+/* Select Field Specific Styles */
+.ginput_container_select select {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  appearance: none;
+  padding-right: 2.5rem;
+}
+
+.ginput_container_select select[multiple] {
+  background-image: none;
+  padding-right: 0.75rem;
+  min-height: 120px;
+}
+
+.ginput_container_select optgroup {
+  font-weight: 600;
+}
+
+.ginput_container_select optgroup option {
+  font-weight: normal;
+  padding-left: 1rem;
+}
+
+/* Progress Bar */
+.gf-progress {
+  margin: 20px 0;
+  padding: 10px;
+  background: var(--gf-background-color);
+  border-radius: 4px;
+}
+
+.gf-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--gf-border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.gf-progress-bar-fill {
+  height: 100%;
+  background: var(--gf-primary-color);
+  transition: width 0.3s ease;
+}
+
+.gf-progress-steps {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.gf-progress-step {
+  position: relative;
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  font-size: 14px;
+  color: var(--gf-disabled-color);
+}
+
+.gf-progress-step.active {
+  color: var(--gf-primary-color);
+  font-weight: 600;
+}
+
+.gf-progress-step.completed {
+  color: var(--gf-success-color);
+}
+
+/* File Upload */
+.ginput_container_fileupload {
+  position: relative;
+}
+
+.gform_drop_area {
+  border: 2px dashed var(--gf-border-color);
+  border-radius: 4px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.3s ease;
+  background: var(--gf-background-color);
+}
+
+.gform_drop_area.dragover {
+  border-color: var(--gf-primary-color);
+  background: rgba(32, 76, 229, 0.05);
+}
+
+.gform_drop_instructions {
+  margin-bottom: 10px;
+  color: var(--gf-disabled-color);
+}
+
+.gform_drop_area input[type="file"] {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.gform_fileupload_rules {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--gf-disabled-color);
+}
+
+.gform_delete_file {
+  color: var(--gf-error-color);
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+/* Preview Area */
+.gform_preview_area {
+  margin-top: 15px;
+}
+
+.gform_preview_file {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  background: var(--gf-background-color);
+  border: 1px solid var(--gf-border-color);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.gform_preview_filename {
+  flex: 1;
+  margin-right: 10px;
+}
+
+.gform_preview_progress {
+  width: 100px;
+  height: 4px;
+  background: var(--gf-border-color);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.gform_preview_progress-bar {
+  height: 100%;
+  background: var(--gf-primary-color);
+  transition: width 0.3s ease;
+}
+
+/* Multi-page Navigation */
+.gform_page_footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--gf-border-color);
+}
+
+.gform_previous_button,
+.gform_next_button {
+  background: var(--gf-primary-color);
+  color: var(--gf-background-color);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.gform_previous_button:hover,
+.gform_next_button:hover {
+  opacity: 0.9;
+}
+
+.gform_previous_button {
+  background: var(--gf-border-color);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .gf-progress-steps {
+    display: none;
+  }
+
+  .gform_page_footer {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .gform_previous_button,
+  .gform_next_button {
+    width: 100%;
+  }
+
+  .gform_drop_area {
+    padding: 15px;
+  }
+
+  .gform_preview_file {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .gform_preview_progress {
+    width: 100%;
+  }
+}
+</style>

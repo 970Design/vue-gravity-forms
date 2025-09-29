@@ -27,16 +27,42 @@
       <input
           :id="`input_${formId}_${field.id}`"
           type="file"
-          :name="`input_${field.id}`"
-          :accept="field.allowedExtensions"
+          :name="`input_${field.id}${isMultipleFiles ? '[]' : ''}`"
+          :accept="getAcceptAttribute"
           :required="field.isRequired"
           :disabled="field.disabled"
+          :multiple="isMultipleFiles"
           :class="getInputClasses()"
           :aria-label="shouldHideLabel ? field.label : null"
           :aria-describedby="getAriaDescribedBy()"
           :aria-invalid="hasError"
           @change="onFileChange"
+          ref="fileInput"
       />
+
+      <!-- Display selected files -->
+      <div v-if="selectedFiles.length > 0" class="gfield_fileupload_files">
+        <ul class="gfield_fileupload_list">
+          <li v-for="(file, index) in selectedFiles" :key="index" class="gfield_fileupload_file">
+            <span class="gfield_fileupload_filename">{{ file.name }}</span>
+            <span class="gfield_fileupload_filesize">({{ formatFileSize(file.size) }})</span>
+            <button
+                v-if="isMultipleFiles"
+                type="button"
+                @click="removeFile(index)"
+                class="gfield_fileupload_remove"
+                :aria-label="`Remove ${file.name}`"
+            >
+              ×
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Max files info -->
+      <div v-if="isMultipleFiles && maxFiles" class="gfield_fileupload_rules">
+        Maximum {{ maxFiles }} files allowed
+      </div>
     </div>
 
     <div
@@ -58,7 +84,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
   field: {
@@ -66,7 +92,7 @@ const props = defineProps({
     required: true,
   },
   modelValue: {
-    type: [File, null],
+    type: [File, Array, null],
     default: null,
   },
   formId: {
@@ -85,29 +111,98 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue"]);
 
+const fileInput = ref(null);
+const selectedFiles = ref([]);
+
+// Check if multiple files are allowed
+const isMultipleFiles = computed(() => {
+  return props.field.multipleFiles === true || props.field.multipleFiles === 1;
+});
+
+// Get max files limit
+const maxFiles = computed(() => {
+  if (!isMultipleFiles.value) return 1;
+  return props.field.maxFiles || null;
+});
+
 // Check if this is a complex field
 const isComplexField = computed(() => {
   return ['fileupload', 'file_upload'].includes(props.field.type)
-})
+});
 
 // Determine if label should be hidden (but still rendered)
 const shouldHideLabel = computed(() => {
-  // Hide label if labelPlacement is set to hidden_label
   if (props.field.labelPlacement === 'hidden_label') {
-    return true
+    return true;
   }
-
-  // Hide label if field visibility is hidden or administrative
   if (props.field.visibility === 'hidden' || props.field.visibility === 'administrative') {
-    return true
+    return true;
   }
+  return false;
+});
 
-  return false
-})
+// Get accept attribute for file input
+const getAcceptAttribute = computed(() => {
+  if (props.field.allowedExtensions) {
+    const extensions = props.field.allowedExtensions.split(',').map(ext => '.' + ext.trim());
+    return extensions.join(',');
+  }
+  return '';
+});
+
+// Initialize selectedFiles from modelValue
+watch(() => props.modelValue, (newValue) => {
+  if (!newValue) {
+    selectedFiles.value = [];
+  } else if (Array.isArray(newValue)) {
+    selectedFiles.value = newValue;
+  } else {
+    selectedFiles.value = [newValue];
+  }
+}, { immediate: true });
 
 const onFileChange = (event) => {
-  const file = event.target.files?.[0] || null;
-  emit("update:modelValue", file);
+  const files = Array.from(event.target.files || []);
+
+  if (isMultipleFiles.value) {
+    // Check max files limit
+    if (maxFiles.value && files.length > maxFiles.value) {
+      alert(`You can only upload a maximum of ${maxFiles.value} files.`);
+      // Reset the input
+      if (fileInput.value) {
+        fileInput.value.value = '';
+      }
+      return;
+    }
+
+    selectedFiles.value = files;
+    emit("update:modelValue", files.length > 0 ? files : null);
+  } else {
+    const file = files[0] || null;
+    selectedFiles.value = file ? [file] : [];
+    emit("update:modelValue", file);
+  }
+};
+
+const removeFile = (index) => {
+  selectedFiles.value.splice(index, 1);
+
+  if (selectedFiles.value.length === 0) {
+    emit("update:modelValue", null);
+    if (fileInput.value) {
+      fileInput.value.value = '';
+    }
+  } else {
+    emit("update:modelValue", isMultipleFiles.value ? selectedFiles.value : selectedFiles.value[0]);
+  }
+};
+
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 };
 
 const getFieldClasses = () => {
@@ -118,9 +213,8 @@ const getFieldClasses = () => {
     `gfield_visibility_${props.field.visibility || "visible"}`,
   ];
 
-  // Add label placement class
   if (props.field.labelPlacement) {
-    classes.push(`field_${props.field.labelPlacement}`)
+    classes.push(`field_${props.field.labelPlacement}`);
   }
 
   if (props.field.isRequired) {
@@ -139,6 +233,10 @@ const getFieldClasses = () => {
     classes.push(props.field.cssClass);
   }
 
+  if (isMultipleFiles.value) {
+    classes.push("gfield_multiple_files");
+  }
+
   return classes.join(" ");
 };
 
@@ -151,16 +249,16 @@ const getInputClasses = () => {
 };
 
 const getAriaDescribedBy = () => {
-  const describedBy = []
+  const describedBy = [];
 
   if (props.field.description && props.field.descriptionPlacement !== 'hidden') {
-    describedBy.push(`gfield_description_${props.formId}_${props.field.id}`)
+    describedBy.push(`gfield_description_${props.formId}_${props.field.id}`);
   }
 
   if (props.hasError) {
-    describedBy.push(`validation_message_${props.formId}_${props.field.id}`)
+    describedBy.push(`validation_message_${props.formId}_${props.field.id}`);
   }
 
-  return describedBy.length > 0 ? describedBy.join(' ') : null
-}
+  return describedBy.length > 0 ? describedBy.join(' ') : null;
+};
 </script>

@@ -30,6 +30,12 @@ const apiKey = import.meta.env.GF_API_KEY;
   />
 ```
 
+You can also include our default styling by importing the CSS file:
+
+```css
+import '@970design/vue-gravity-forms/dist/style.css';
+```
+
 ## Props
 
 | Prop | Type | Required | Description                                          |

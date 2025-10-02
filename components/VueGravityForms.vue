@@ -13,6 +13,7 @@ import FileUploadField from "./form/FileUploadField.vue";
 import SectionBreakField from "./form/SectionBreakField.vue";
 import AddressField from "./form/AddressField.vue";
 import ImageChoiceField from "./form/ImageChoiceField.vue";
+import NameField from "./form/NameField.vue";
 
 const props = defineProps({
   endpoint: {
@@ -313,6 +314,9 @@ const fetchForm = async () => {
         initialData[fieldKey] = null;
       } else if (isAddressFieldType(field.type)) {
         initialData[fieldKey] = {};
+      } else if (isNameFieldType(field.type) && field.nameFormat !== 'simple') {
+        // Initialize as object for complex name format, string for simple
+        initialData[fieldKey] = {};
       } else {
         initialData[fieldKey] = "";
       }
@@ -376,6 +380,8 @@ const resetForm = () => {
     } else if (isFileUploadFieldType(field.type)) {
       resetData[fieldKey] = null;
     } else if (isAddressFieldType(field.type)) {
+      resetData[fieldKey] = {};
+    } else if (isNameFieldType(field.type) && field.nameFormat !== 'simple') {
       resetData[fieldKey] = {};
     } else {
       resetData[fieldKey] = "";
@@ -492,7 +498,7 @@ const performFormSubmission = async () => {
         });
       }
     }
-    // Handle address objects
+    // Handle address and name objects
     else if (typeof fieldValue === 'object' && fieldValue !== null && !Array.isArray(fieldValue)) {
       if (field && isAddressFieldType(field.type)) {
         const addressMapping = {
@@ -509,6 +515,29 @@ const performFormSubmission = async () => {
             fd.append(`input_${fieldId}_${addressMapping[addressKey]}`, addressValue);
           }
         });
+      } else if (field && isNameFieldType(field.type)) {
+        // Handle name format
+        if (field.nameFormat === 'simple') {
+          // Simple format: single string value
+          fd.append(fieldKey, fieldValue);
+        } else {
+          // Complex format: object with prefix, first, middle, last, suffix
+          // Use underscore (_) to match Address field format
+          const nameMapping = {
+            prefix: '2',
+            first: '3',
+            middle: '4',
+            last: '6',
+            suffix: '8'
+          };
+
+          Object.entries(fieldValue).forEach(([nameKey, nameValue]) => {
+            if (nameValue && nameMapping[nameKey]) {
+              // Use underscore separator: input_10_3 (same as Address field)
+              fd.append(`input_${fieldId}_${nameMapping[nameKey]}`, nameValue);
+            }
+          });
+        }
       }
     }
     // Handle simple values (text, textarea, select, radio, etc.)
@@ -668,6 +697,10 @@ const isImageChoiceFieldType = (fieldType) => {
   return ['image_choice'].includes(fieldType);
 };
 
+const isNameFieldType = (fieldType) => {
+  return ['name'].includes(fieldType);
+};
+
 onMounted(() => {
   if (!endpoint) {
     errorMessage.value = 'API endpoint not configured';
@@ -677,7 +710,6 @@ onMounted(() => {
   fetchForm();
 });
 </script>
-
 
 <template>
   <div class="gravity-form" :class="`gform_wrapper gform_wrapper_${formId}`">
@@ -861,6 +893,16 @@ onMounted(() => {
                 v-model="formData[`input_${field.id}`]"
                 :other-value="formData[`input_${field.id}_other`] || ''"
                 @update:other-value="formData[`input_${field.id}_other`] = $event"
+                :error-message="fieldErrors[field.id]"
+                :has-error="!!fieldErrors[field.id]"
+            />
+
+            <!-- Name Field Component -->
+            <NameField
+                v-else-if="isNameFieldType(field.type)"
+                :field="field"
+                :form-id="formId"
+                v-model="formData[`input_${field.id}`]"
                 :error-message="fieldErrors[field.id]"
                 :has-error="!!fieldErrors[field.id]"
             />
@@ -1061,7 +1103,7 @@ onMounted(() => {
 
 .gform_validation_errors {
   background: var(--gf-background-color);
-  border: 1px solid var(--gf-background-color);
+  border: 1px solid var(--gf-error-color);
   color: var(--gf-error-color);
   padding: 1rem;
   border-radius: 3px;
@@ -1231,6 +1273,25 @@ onMounted(() => {
 @media (min-width: 768px) {
   .ginput_container_address {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Name Field */
+.gfield_contains_name .name_complex {
+  display: grid;
+  grid-template-columns: 100%;
+  gap: 0.75rem 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .gfield_contains_name .name_complex {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 768px) {
+  .gfield_contains_name .name_complex:has(.name_prefix) {
+    grid-template-columns: 6.25rem 1fr 1fr;
   }
 }
 

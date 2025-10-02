@@ -1,15 +1,13 @@
 {
   "name": "@970design/vue-gravity-forms",
-  "version": "1.0.7",
-  "description": "A Vue component for interacting with the Gravity Forms REST API",
+  "version": "1.0.8",
+  "description": "A Vue component for interacting with Gravity Forms in a headless WordPress environment.",
   "keywords": [
     "vue",
     "gravity",
     "forms",
     "wordpress",
     "headless",
-    "rest",
-    "api"
   ],
   "author": "970Design",
   "license": "ISC",
@@ -34,6 +32,10 @@
       "types": "./vue-gravity-forms.d.ts",
       "import": "./dist/vue-gravity-forms.es.js",
       "require": "./dist/vue-gravity-forms.umd.js"
+    },
+    "./dist/*.css": {
+      "import": "./dist/*.css",
+      "require": "./dist/*.css"
     }
   },
   "files": [

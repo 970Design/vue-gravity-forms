@@ -1,6 +1,6 @@
 {
   "name": "@970design/vue-gravity-forms",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "A Vue component for interacting with Gravity Forms in a headless WordPress environment.",
   "keywords": [
     "vue",

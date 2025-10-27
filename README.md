@@ -48,7 +48,7 @@ import '@970design/vue-gravity-forms/dist/style.css';
 
 ## Feature Roadmap
 
-- Support for overriding field components
+- ~~Support for overriding field components~~
 - ~~Support for multipage forms~~
 - Support for Post fields
 - Support for Pricing fields

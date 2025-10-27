@@ -15,6 +15,8 @@ import AddressField from "./form/AddressField.vue";
 import ImageChoiceField from "./form/ImageChoiceField.vue";
 import NameField from "./form/NameField.vue";
 
+import { useFieldComponents } from './composables/useFieldComponents';
+
 const props = defineProps({
   endpoint: {
     type: String,
@@ -31,6 +33,10 @@ const props = defineProps({
   recaptchaKey: {
     type: String,
     required: false
+  },
+  customComponents: {
+    type: Object,
+    default: () => ({})
   }
 });
 
@@ -45,6 +51,8 @@ const successMessage = ref("");
 const errorMessage = ref("");
 const fieldErrors = reactive({});
 const showForm = ref(true);
+
+const { fieldComponents } = useFieldComponents(props.customComponents);
 
 // Multi-step functionality
 const currentPage = ref(1);
@@ -772,7 +780,15 @@ onMounted(() => {
         </div>
 
         <div :id="`gform_fields_${formId}`" class="gform_fields top_label form_sublabel_below description_below">
-          <template v-for="field in currentPageFields" :key="field.id">
+            <component
+                v-for="field in currentPageFields"
+                :key="field.id"
+                :is="fieldComponents[field.type]"
+                :field="field"
+                :form-id="formId"
+                v-model="formData[`input_${field.id}`]"
+                :error-message="fieldErrors[field.id]"
+                :has-error="!!fieldErrors[field.id]">
 
             <!-- Text Field Component -->
             <TextField
@@ -938,7 +954,7 @@ onMounted(() => {
                 {{ fieldErrors[field.id] }}
               </div>
             </div>
-          </template>
+          </component>
         </div>
       </div>
 

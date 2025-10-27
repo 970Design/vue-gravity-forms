@@ -87,6 +87,15 @@ You can override any default form field component by passing custom components t
 
 Custom components must implement the following props interface:
 
+```typescript 
+interface FieldComponentProps {
+    field: Object // The field configuration object 
+    modelValue: string // The field's current value (v-model) 
+    formId: string|number // The form ID 
+    errorMessage: string // Error message if validation fails 
+    hasError: boolean // Whether the field has an error 
+}
+```
 
 ## Feature Roadmap
 

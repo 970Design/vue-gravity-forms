@@ -1,6 +1,71 @@
+// composables/useConditionalLogic.js
 import { computed, watch } from 'vue';
 
 export function useConditionalLogic(field, formData, allFields) {
+	/**
+	 * Get the actual field value considering sub-fields for complex fields
+	 * @param {String} fieldId - The field ID (can include sub-field like "5.3" for Name first)
+	 * @returns {*} - The field value
+	 */
+	const getFieldValue = (fieldId) => {
+		// Check if this is a sub-field reference (e.g., "5.3" for Name first)
+		const fieldIdParts = String(fieldId).split('.');
+		const mainFieldId = fieldIdParts[0];
+		const subFieldId = fieldIdParts[1];
+
+		const fieldKey = `input_${mainFieldId}`;
+		const fieldValue = formData.value?.[fieldKey];
+
+		// If there's a sub-field ID, extract that specific sub-field value
+		if (subFieldId && typeof fieldValue === 'object' && fieldValue !== null && !Array.isArray(fieldValue)) {
+			const targetField = allFields.value?.find(f => f.id == mainFieldId);
+
+			if (!targetField) return fieldValue;
+
+			// Handle Name field sub-fields
+			if (targetField.type === 'name') {
+				const nameMapping = {
+					'2': 'prefix',
+					'3': 'first',
+					'4': 'middle',
+					'6': 'last',
+					'8': 'suffix'
+				};
+				const subFieldKey = nameMapping[subFieldId];
+				return subFieldKey ? fieldValue[subFieldKey] : fieldValue;
+			}
+
+			// Handle Address field sub-fields
+			if (targetField.type === 'address') {
+				const addressMapping = {
+					'1': 'street',
+					'2': 'street2',
+					'3': 'city',
+					'4': 'state',
+					'5': 'zip',
+					'6': 'country'
+				};
+				const subFieldKey = addressMapping[subFieldId];
+				return subFieldKey ? fieldValue[subFieldKey] : fieldValue;
+			}
+
+			// Handle other complex fields if needed
+			return fieldValue;
+		}
+
+		return fieldValue;
+	};
+
+	/**
+	 * Get the target field object
+	 * @param {String} fieldId - The field ID
+	 * @returns {Object|null} - The field object
+	 */
+	const getTargetField = (fieldId) => {
+		const mainFieldId = String(fieldId).split('.')[0];
+		return allFields.value?.find(f => f.id == mainFieldId);
+	};
+
 	/**
 	 * Evaluate a single rule against form data
 	 * @param {Object} rule - The conditional logic rule
@@ -10,9 +75,8 @@ export function useConditionalLogic(field, formData, allFields) {
 		if (!rule || !rule.fieldId) return true;
 
 		const targetFieldId = rule.fieldId;
-		const targetField = allFields.value?.find(f => f.id == targetFieldId);
-		const fieldKey = `input_${targetFieldId}`;
-		const fieldValue = formData.value?.[fieldKey];
+		const targetField = getTargetField(targetFieldId);
+		const fieldValue = getFieldValue(targetFieldId);
 		const operator = rule.operator;
 		const ruleValue = rule.value;
 
@@ -64,14 +128,14 @@ export function useConditionalLogic(field, formData, allFields) {
 			return fieldValue.includes(ruleValue);
 		}
 
-		// Handle name fields (objects)
+		// Handle name fields (objects) - when checking the whole name field, not a sub-field
 		if (fieldType === 'name' && typeof fieldValue === 'object') {
 			// For name fields, check if any part matches
 			const nameString = Object.values(fieldValue).filter(v => v).join(' ').toLowerCase();
 			return nameString.includes(ruleValue.toLowerCase());
 		}
 
-		// Handle address fields (objects)
+		// Handle address fields (objects) - when checking the whole address field, not a sub-field
 		if (fieldType === 'address' && typeof fieldValue === 'object') {
 			// For address fields, check if any part matches
 			const addressString = Object.values(fieldValue).filter(v => v).join(' ').toLowerCase();
@@ -102,13 +166,13 @@ export function useConditionalLogic(field, formData, allFields) {
 			);
 		}
 
-		// Handle objects (name, address)
+		// Handle objects (name, address) - when checking the whole field, not a sub-field
 		if (typeof fieldValue === 'object' && fieldValue !== null) {
 			const objectString = Object.values(fieldValue).filter(v => v).join(' ').toLowerCase();
 			return objectString.includes(String(ruleValue).toLowerCase());
 		}
 
-		// Handle strings
+		// Handle strings (including sub-field values)
 		if (typeof fieldValue === 'string') {
 			return fieldValue.toLowerCase().includes(String(ruleValue).toLowerCase());
 		}

@@ -17,6 +17,10 @@ export function useFieldComponents(customComponents) {
 	const defaultComponents = {
 		text: TextField,
 		number: TextField,
+		phone: TextField,
+		website: TextField,
+		password: TextField,
+		email: TextField,
 		textarea: TextareaField,
 		select: SelectField,
 		multiselect: MultiselectField,

@@ -16,6 +16,7 @@ import NameField from "../form/NameField.vue";
 export function useFieldComponents(customComponents) {
 	const defaultComponents = {
 		text: TextField,
+		number: TextField,
 		textarea: TextareaField,
 		select: SelectField,
 		multiselect: MultiselectField,

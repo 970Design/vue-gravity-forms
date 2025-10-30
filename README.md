@@ -97,13 +97,21 @@ interface FieldComponentProps {
 }
 ```
 
+## Conditional Logic
+
+As of the latest release, **Conditional Logic** is fully supported.  
+Fields, sections, and pages will automatically show or hide based on their defined Gravity Forms logic rules — no additional setup is required.
+
+This logic is handled reactively in Vue using the `useConditionalLogic` composable, ensuring seamless updates as users interact with the form.
+
+
 ## Feature Roadmap
 
 - ~~Support for overriding field components~~
 - ~~Support for multipage forms~~
+- ~~Support for Conditional Logic~~
 - Support for Post fields
 - Support for Pricing fields
-- Support for Conditional Logic
 - Support for Gravity Forms Add-Ons (e.g. User Registration, etc)
 
 ## More Information

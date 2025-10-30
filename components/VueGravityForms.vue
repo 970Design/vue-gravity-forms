@@ -16,6 +16,7 @@ import ImageChoiceField from "./form/ImageChoiceField.vue";
 import NameField from "./form/NameField.vue";
 
 import { useFieldComponents } from './composables/useFieldComponents';
+import { useConditionalLogic } from './composables/useConditionalLogic';
 
 const props = defineProps({
   endpoint: {
@@ -58,6 +59,9 @@ const { fieldComponents } = useFieldComponents(props.customComponents);
 const currentPage = ref(1);
 const totalPages = ref(1);
 const formPages = ref([]);
+
+// All fields (for conditional logic evaluation)
+const allFields = computed(() => form.value?.fields || []);
 
 // Validation and normalization of endpoint URL
 if (endpoint) {
@@ -140,10 +144,16 @@ const organizeFieldsIntoPages = (fields) => {
   return pages;
 };
 
-// Get current page fields
+// Get current page fields (filtered by conditional logic visibility)
 const currentPageFields = computed(() => {
   if (formPages.value.length === 0) return [];
-  return formPages.value[currentPage.value - 1]?.fields || [];
+  const pageFields = formPages.value[currentPage.value - 1]?.fields || [];
+
+  // Filter fields based on conditional logic
+  return pageFields.filter(field => {
+    const { isFieldVisible } = useConditionalLogic(field, formData, allFields);
+    return isFieldVisible.value;
+  });
 });
 
 // Get current page break settings
@@ -185,7 +195,7 @@ const previousButtonText = computed(() => {
   return 'Previous';
 });
 
-// Validate current page fields
+// Validate current page fields (only validate visible fields)
 const validateCurrentPage = () => {
   const pageFields = currentPageFields.value;
   let isValid = true;
@@ -456,10 +466,22 @@ const performFormSubmission = async () => {
 
   const fd = new FormData();
 
+  // Get all visible fields for submission (considering conditional logic)
+  const visibleFields = form.value.fields.filter(field => {
+    if (field.type === 'page') return false;
+    const { isFieldVisible } = useConditionalLogic(field, formData, allFields);
+    return isFieldVisible.value;
+  });
+
   // Handle form data submission
   Object.entries(formData.value).forEach(([fieldKey, fieldValue]) => {
     const fieldId = fieldKey.replace('input_', '');
     const field = form.value.fields.find(f => f.id == fieldId);
+
+    // Skip if field is not visible due to conditional logic
+    if (field && !visibleFields.includes(field)) {
+      return;
+    }
 
     // Skip "other" fields in this loop (handle separately below)
     if (fieldKey.includes('_other')) {
@@ -526,7 +548,6 @@ const performFormSubmission = async () => {
       } else if (field && isNameFieldType(field.type)) {
         // Handle name format
         if (field.nameFormat === 'simple') {
-          // Simple format: single string value
           fd.append(fieldKey, fieldValue);
         } else {
           // Complex format: object with prefix, first, middle, last, suffix
@@ -564,6 +585,14 @@ const performFormSubmission = async () => {
   // Handle "other" values for checkboxes and multi-selects
   Object.entries(formData.value).forEach(([fieldKey, fieldValue]) => {
     if (fieldKey.includes('_other') && fieldValue) {
+      const fieldId = fieldKey.replace('input_', '').replace('_other', '');
+      const field = form.value.fields.find(f => f.id == fieldId);
+
+      // Skip if field is not visible
+      if (field && !visibleFields.includes(field)) {
+        return;
+      }
+
       fd.append(fieldKey, fieldValue);
     }
   });
@@ -586,14 +615,9 @@ const performFormSubmission = async () => {
     }
 
     if (response.ok) {
-      // Reset form first
       resetForm();
-
-      // Handle confirmation based on form settings
       handleConfirmation(data);
-
     } else {
-      // Handle field-specific validation errors
       if (data.validation_messages) {
         Object.entries(data.validation_messages).forEach(([fieldId, message]) => {
           fieldErrors[fieldId] = message;
@@ -780,15 +804,15 @@ onMounted(() => {
         </div>
 
         <div :id="`gform_fields_${formId}`" class="gform_fields top_label form_sublabel_below description_below">
-            <component
-                v-for="field in currentPageFields"
-                :key="field.id"
-                :is="fieldComponents[field.type]"
-                :field="field"
-                :form-id="formId"
-                v-model="formData[`input_${field.id}`]"
-                :error-message="fieldErrors[field.id]"
-                :has-error="!!fieldErrors[field.id]">
+          <component
+              v-for="field in currentPageFields"
+              :key="field.id"
+              :is="fieldComponents[field.type]"
+              :field="field"
+              :form-id="formId"
+              v-model="formData[`input_${field.id}`]"
+              :error-message="fieldErrors[field.id]"
+              :has-error="!!fieldErrors[field.id]">
 
             <!-- Text Field Component -->
             <TextField

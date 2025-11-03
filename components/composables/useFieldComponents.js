@@ -12,6 +12,11 @@ import SectionBreakField from "../form/SectionBreakField.vue";
 import AddressField from "../form/AddressField.vue";
 import ImageChoiceField from "../form/ImageChoiceField.vue";
 import NameField from "../form/NameField.vue";
+import PricingField from "../form/PricingField.vue";
+import QuantityField from "../form/QuantityField.vue";
+import OptionField from "../form/OptionField.vue";
+import ShippingField from "../form/ShippingField.vue";
+import TotalField from "../form/TotalField.vue";
 
 export function useFieldComponents(customComponents) {
 	const defaultComponents = {
@@ -32,7 +37,13 @@ export function useFieldComponents(customComponents) {
 		section: SectionBreakField,
 		address: AddressField,
 		image_choice: ImageChoiceField,
-		name: NameField
+		name: NameField,
+		// Pricing fields
+		product: PricingField,
+		// quantity: QuantityField,
+		// option: OptionField,
+		// shipping: ShippingField,
+		// total: TotalField
 	};
 
 	const fieldComponents = computed(() => ({

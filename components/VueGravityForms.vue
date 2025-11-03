@@ -333,8 +333,52 @@ const fetchForm = async () => {
       } else if (isAddressFieldType(field.type)) {
         initialData[fieldKey] = {};
       } else if (isNameFieldType(field.type) && field.nameFormat !== 'simple') {
-        // Initialize as object for complex name format, string for simple
         initialData[fieldKey] = {};
+      } else if (isProductFieldType(field.type)) {
+        // Initialize product field based on input type
+        if (field.inputType === 'singleproduct') {
+          const quantityEnabled = !field.disableQuantity;
+          initialData[fieldKey] = {
+            quantity: quantityEnabled ? (field.defaultValue || '') : null
+          };
+        } else if (field.inputType === 'hiddenproduct') {
+          const quantityEnabled = !field.disableQuantity;
+          initialData[fieldKey] = {
+            product_name: field.label || '',
+            price: field.basePrice || '0',
+            quantity: quantityEnabled ? 1 : null
+          };
+        } else if (field.inputType === 'calculation') {
+          initialData[fieldKey] = {
+            product_name: field.label || '',
+            price: '0'
+          };
+        } else {
+          // radio or select
+          const quantityEnabled = !field.disableQuantity;
+          initialData[fieldKey] = {
+            value: '',
+            text: '',
+            price: '0',
+            quantity: quantityEnabled ? '' : null
+          };
+        }
+      }
+      else if (isQuantityFieldType(field.type)) {
+        initialData[fieldKey] = field.defaultValue || 1;
+      }
+      else if (isOptionFieldType(field.type)) {
+        if (field.inputType === 'checkbox') {
+          initialData[fieldKey] = [];
+        } else {
+          initialData[fieldKey] = '';
+        }
+      }
+      else if (isShippingFieldType(field.type)) {
+        initialData[fieldKey] = '';
+      }
+      else if (isTotalFieldType(field.type)) {
+        initialData[fieldKey] = '0';
       } else {
         initialData[fieldKey] = "";
       }
@@ -569,6 +613,51 @@ const performFormSubmission = async () => {
         }
       }
     }
+    // Handle Product fields
+    else if (field && isProductFieldType(field.type)) {
+      if (field.inputType === 'singleproduct') {
+        // For single product, we don't need to send product name and price
+        // as they're already in hidden inputs in the component
+        // Only send quantity if enabled
+        const quantityEnabled = !field.disableQuantity;
+        if (quantityEnabled && fieldValue.quantity !== null && fieldValue.quantity !== undefined && fieldValue.quantity !== '') {
+          fd.append(`input_${fieldId}.3`, fieldValue.quantity);
+        }
+      } else if (field.inputType === 'radio' || field.inputType === 'select') {
+        if (fieldValue.value) {
+          fd.append(fieldKey, fieldValue.value);
+        }
+        const quantityEnabled = !field.disableQuantity;
+        if (quantityEnabled && fieldValue.quantity !== null && fieldValue.quantity !== undefined && fieldValue.quantity !== '') {
+          fd.append(`input_${fieldId}.3`, fieldValue.quantity);
+        }
+      } else if (field.inputType === 'hiddenproduct') {
+        fd.append(`input_${fieldId}.1`, field.label);
+        // Extract numeric price from basePrice
+        const numericPrice = field.basePrice ? field.basePrice.replace(/[^0-9.-]/g, '') : '0';
+        fd.append(`input_${fieldId}.2`, numericPrice);
+        const quantityEnabled = !field.disableQuantity;
+        if (quantityEnabled) {
+          fd.append(`input_${fieldId}.3`, fieldValue.quantity || 1);
+        }
+      } else if (field.inputType === 'calculation') {
+        fd.append(`input_${fieldId}.1`, field.label);
+        const numericPrice = fieldValue.price ? fieldValue.price.replace(/[^0-9.-]/g, '') : '0';
+        fd.append(`input_${fieldId}.2`, numericPrice);
+      }
+    }
+    // Handle Option fields (checkbox type with multiple selections)
+    else if (field && isOptionFieldType(field.type) && field.inputType === 'checkbox') {
+      if (Array.isArray(fieldValue) && fieldValue.length > 0) {
+        fieldValue.forEach((selectedValue, idx) => {
+          const choiceIndex = field.choices.findIndex(choice => choice.value === selectedValue);
+          if (choiceIndex !== -1) {
+            fd.append(`input_${fieldId}.${choiceIndex + 1}`, selectedValue);
+          }
+        });
+      }
+    }
+
     // Handle simple values (text, textarea, select, radio, etc.)
     else if (fieldValue !== null && fieldValue !== undefined && fieldValue !== '') {
       if (field && field.type === 'consent') {
@@ -731,6 +820,30 @@ const isImageChoiceFieldType = (fieldType) => {
 
 const isNameFieldType = (fieldType) => {
   return ['name'].includes(fieldType);
+};
+
+const isPricingFieldType = (fieldType) => {
+  return ['product', 'quantity', 'option', 'shipping', 'total'].includes(fieldType);
+};
+
+const isProductFieldType = (fieldType) => {
+  return ['product'].includes(fieldType);
+};
+
+const isQuantityFieldType = (fieldType) => {
+  return ['quantity'].includes(fieldType);
+};
+
+const isOptionFieldType = (fieldType) => {
+  return ['option'].includes(fieldType);
+};
+
+const isShippingFieldType = (fieldType) => {
+  return ['shipping'].includes(fieldType);
+};
+
+const isTotalFieldType = (fieldType) => {
+  return ['total'].includes(fieldType);
 };
 
 onMounted(() => {
@@ -946,6 +1059,54 @@ onMounted(() => {
                 :error-message="fieldErrors[field.id]"
                 :has-error="!!fieldErrors[field.id]"
             />
+
+            <!-- Pricing Field Component (Product) -->
+            <PricingField
+                v-else-if="isProductFieldType(field.type)"
+                :field="field"
+                :form-id="formId"
+                v-model="formData[`input_${field.id}`]"
+                :error-message="fieldErrors[field.id]"
+                :has-error="!!fieldErrors[field.id]"
+            />
+
+            <!-- Quantity Field Component -->
+<!--            <QuantityField-->
+<!--                v-else-if="isQuantityFieldType(field.type)"-->
+<!--                :field="field"-->
+<!--                :form-id="formId"-->
+<!--                v-model="formData[`input_${field.id}`]"-->
+<!--                :error-message="fieldErrors[field.id]"-->
+<!--                :has-error="!!fieldErrors[field.id]"-->
+<!--            />-->
+
+            <!-- Option Field Component -->
+<!--            <OptionField-->
+<!--                v-else-if="isOptionFieldType(field.type)"-->
+<!--                :field="field"-->
+<!--                :form-id="formId"-->
+<!--                v-model="formData[`input_${field.id}`]"-->
+<!--                :error-message="fieldErrors[field.id]"-->
+<!--                :has-error="!!fieldErrors[field.id]"-->
+<!--            />-->
+
+            <!-- Shipping Field Component -->
+<!--            <ShippingField-->
+<!--                v-else-if="isShippingFieldType(field.type)"-->
+<!--                :field="field"-->
+<!--                :form-id="formId"-->
+<!--                v-model="formData[`input_${field.id}`]"-->
+<!--                :error-message="fieldErrors[field.id]"-->
+<!--                :has-error="!!fieldErrors[field.id]"-->
+<!--            />-->
+
+            <!-- Total Field Component -->
+<!--            <TotalField-->
+<!--                v-else-if="isTotalFieldType(field.type)"-->
+<!--                :field="field"-->
+<!--                :form-id="formId"-->
+<!--                v-model="formData[`input_${field.id}`]"-->
+<!--            />-->
 
             <!-- Other field types - fallback with helpful message -->
             <div

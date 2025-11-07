@@ -13,6 +13,14 @@ import AddressField from "../form/AddressField.vue";
 import ImageChoiceField from "../form/ImageChoiceField.vue";
 import NameField from "../form/NameField.vue";
 
+// Post Field Components
+import PostTitleField from "../form/PostTitleField.vue";
+// import PostContentField from "../form/PostContentField.vue";
+// import PostExcerptField from "../form/PostExcerptField.vue";
+// import PostTagsField from "../form/PostTagsField.vue";
+// import PostImageField from "../form/PostImageField.vue";
+// import PostCustomField from "../form/PostCustomField.vue";
+
 export function useFieldComponents(customComponents) {
 	const defaultComponents = {
 		text: TextField,
@@ -32,7 +40,15 @@ export function useFieldComponents(customComponents) {
 		section: SectionBreakField,
 		address: AddressField,
 		image_choice: ImageChoiceField,
-		name: NameField
+		name: NameField,
+
+		// Post Fields
+		post_title: PostTitleField
+		// post_content: PostContentField,
+		// post_excerpt: PostExcerptField,
+		// post_tags: PostTagsField,
+		// post_image: PostImageField,
+		// post_custom_field: PostCustomField
 	};
 
 	const fieldComponents = computed(() => ({

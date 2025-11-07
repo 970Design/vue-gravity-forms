@@ -14,9 +14,14 @@ import SectionBreakField from "./form/SectionBreakField.vue";
 import AddressField from "./form/AddressField.vue";
 import ImageChoiceField from "./form/ImageChoiceField.vue";
 import NameField from "./form/NameField.vue";
+import PostTitleField from "./form/PostTitleField.vue";
+// import PostContentField from "./form/PostContentField.vue";
+// import PostExcerptField from "./form/PostExcerptField.vue";
+// import PostTagsField from "./form/PostTagsField.vue";
+// import PostImageField from "./form/PostImageField.vue";
+// import PostCustomField from "./form/PostCustomField.vue";
 
 import { useFieldComponents } from './composables/useFieldComponents';
-import { useConditionalLogic } from './composables/useConditionalLogic';
 
 const props = defineProps({
   endpoint: {
@@ -59,9 +64,6 @@ const { fieldComponents } = useFieldComponents(props.customComponents);
 const currentPage = ref(1);
 const totalPages = ref(1);
 const formPages = ref([]);
-
-// All fields (for conditional logic evaluation)
-const allFields = computed(() => form.value?.fields || []);
 
 // Validation and normalization of endpoint URL
 if (endpoint) {
@@ -144,16 +146,10 @@ const organizeFieldsIntoPages = (fields) => {
   return pages;
 };
 
-// Get current page fields (filtered by conditional logic visibility)
+// Get current page fields
 const currentPageFields = computed(() => {
   if (formPages.value.length === 0) return [];
-  const pageFields = formPages.value[currentPage.value - 1]?.fields || [];
-
-  // Filter fields based on conditional logic
-  return pageFields.filter(field => {
-    const { isFieldVisible } = useConditionalLogic(field, formData, allFields);
-    return isFieldVisible.value;
-  });
+  return formPages.value[currentPage.value - 1]?.fields || [];
 });
 
 // Get current page break settings
@@ -195,7 +191,7 @@ const previousButtonText = computed(() => {
   return 'Previous';
 });
 
-// Validate current page fields (only validate visible fields)
+// Validate current page fields
 const validateCurrentPage = () => {
   const pageFields = currentPageFields.value;
   let isValid = true;
@@ -328,7 +324,7 @@ const fetchForm = async () => {
         } else {
           initialData[fieldKey] = [];
         }
-      } else if (isFileUploadFieldType(field.type)) {
+      } else if (isFileUploadFieldType(field.type) || isPostImageFieldType(field.type)) {
         initialData[fieldKey] = null;
       } else if (isAddressFieldType(field.type)) {
         initialData[fieldKey] = {};
@@ -395,7 +391,7 @@ const resetForm = () => {
 
     if (isCheckboxFieldType(field.type) || isMultiselectFieldType(field.type)) {
       resetData[fieldKey] = [];
-    } else if (isFileUploadFieldType(field.type)) {
+    } else if (isFileUploadFieldType(field.type) || isPostImageFieldType(field.type)) {
       resetData[fieldKey] = null;
     } else if (isAddressFieldType(field.type)) {
       resetData[fieldKey] = {};
@@ -413,7 +409,7 @@ const resetForm = () => {
 
   // Reset file inputs manually
   form.value.fields.forEach(field => {
-    if (isFileUploadFieldType(field.type)) {
+    if (isFileUploadFieldType(field.type) || isPostImageFieldType(field.type)) {
       const fileInput = document.querySelector(`#input_${formId}_${field.id}`);
       if (fileInput) {
         fileInput.value = '';
@@ -466,30 +462,18 @@ const performFormSubmission = async () => {
 
   const fd = new FormData();
 
-  // Get all visible fields for submission (considering conditional logic)
-  const visibleFields = form.value.fields.filter(field => {
-    if (field.type === 'page') return false;
-    const { isFieldVisible } = useConditionalLogic(field, formData, allFields);
-    return isFieldVisible.value;
-  });
-
   // Handle form data submission
   Object.entries(formData.value).forEach(([fieldKey, fieldValue]) => {
     const fieldId = fieldKey.replace('input_', '');
     const field = form.value.fields.find(f => f.id == fieldId);
-
-    // Skip if field is not visible due to conditional logic
-    if (field && !visibleFields.includes(field)) {
-      return;
-    }
 
     // Skip "other" fields in this loop (handle separately below)
     if (fieldKey.includes('_other')) {
       return;
     }
 
-    // Handle file uploads FIRST
-    if (field && isFileUploadFieldType(field.type)) {
+    // Handle file uploads FIRST (includes post_image)
+    if (field && (isFileUploadFieldType(field.type) || isPostImageFieldType(field.type))) {
       // Check if this is a multi-file upload field
       const isMultiFile = field.multipleFiles === true || field.multipleFiles === 1;
 
@@ -548,6 +532,7 @@ const performFormSubmission = async () => {
       } else if (field && isNameFieldType(field.type)) {
         // Handle name format
         if (field.nameFormat === 'simple') {
+          // Simple format: single string value
           fd.append(fieldKey, fieldValue);
         } else {
           // Complex format: object with prefix, first, middle, last, suffix
@@ -569,7 +554,7 @@ const performFormSubmission = async () => {
         }
       }
     }
-    // Handle simple values (text, textarea, select, radio, etc.)
+    // Handle simple values (text, textarea, select, radio, post fields, etc.)
     else if (fieldValue !== null && fieldValue !== undefined && fieldValue !== '') {
       if (field && field.type === 'consent') {
         fd.append(`input_${fieldId}.1`, fieldValue);
@@ -585,14 +570,6 @@ const performFormSubmission = async () => {
   // Handle "other" values for checkboxes and multi-selects
   Object.entries(formData.value).forEach(([fieldKey, fieldValue]) => {
     if (fieldKey.includes('_other') && fieldValue) {
-      const fieldId = fieldKey.replace('input_', '').replace('_other', '');
-      const field = form.value.fields.find(f => f.id == fieldId);
-
-      // Skip if field is not visible
-      if (field && !visibleFields.includes(field)) {
-        return;
-      }
-
       fd.append(fieldKey, fieldValue);
     }
   });
@@ -615,9 +592,14 @@ const performFormSubmission = async () => {
     }
 
     if (response.ok) {
+      // Reset form first
       resetForm();
+
+      // Handle confirmation based on form settings
       handleConfirmation(data);
+
     } else {
+      // Handle field-specific validation errors
       if (data.validation_messages) {
         Object.entries(data.validation_messages).forEach(([fieldId, message]) => {
           fieldErrors[fieldId] = message;
@@ -731,6 +713,34 @@ const isImageChoiceFieldType = (fieldType) => {
 
 const isNameFieldType = (fieldType) => {
   return ['name'].includes(fieldType);
+};
+
+const isPostTitleFieldType = (fieldType) => {
+  return ['post_title'].includes(fieldType);
+};
+
+const isPostContentFieldType = (fieldType) => {
+  return ['post_content'].includes(fieldType);
+};
+
+const isPostExcerptFieldType = (fieldType) => {
+  return ['post_excerpt'].includes(fieldType);
+};
+
+const isPostTagsFieldType = (fieldType) => {
+  return ['post_tags'].includes(fieldType);
+};
+
+const isPostCategoryFieldType = (fieldType) => {
+  return ['post_category'].includes(fieldType);
+};
+
+const isPostImageFieldType = (fieldType) => {
+  return ['post_image'].includes(fieldType);
+};
+
+const isPostCustomFieldType = (fieldType) => {
+  return ['post_custom_field'].includes(fieldType);
 };
 
 onMounted(() => {
@@ -940,6 +950,76 @@ onMounted(() => {
             <!-- Name Field Component -->
             <NameField
                 v-else-if="isNameFieldType(field.type)"
+                :field="field"
+                :form-id="formId"
+                v-model="formData[`input_${field.id}`]"
+                :error-message="fieldErrors[field.id]"
+                :has-error="!!fieldErrors[field.id]"
+            />
+
+            <!-- Post Title Field Component -->
+            <PostTitleField
+                v-else-if="isPostTitleFieldType(field.type)"
+                :field="field"
+                :form-id="formId"
+                v-model="formData[`input_${field.id}`]"
+                :error-message="fieldErrors[field.id]"
+                :has-error="!!fieldErrors[field.id]"
+            />
+
+            <!-- Post Content Field Component -->
+            <PostContentField
+                v-else-if="isPostContentFieldType(field.type)"
+                :field="field"
+                :form-id="formId"
+                v-model="formData[`input_${field.id}`]"
+                :error-message="fieldErrors[field.id]"
+                :has-error="!!fieldErrors[field.id]"
+            />
+
+            <!-- Post Excerpt Field Component -->
+            <PostExcerptField
+                v-else-if="isPostExcerptFieldType(field.type)"
+                :field="field"
+                :form-id="formId"
+                v-model="formData[`input_${field.id}`]"
+                :error-message="fieldErrors[field.id]"
+                :has-error="!!fieldErrors[field.id]"
+            />
+
+            <!-- Post Tags Field Component -->
+            <PostTagsField
+                v-else-if="isPostTagsFieldType(field.type)"
+                :field="field"
+                :form-id="formId"
+                v-model="formData[`input_${field.id}`]"
+                :error-message="fieldErrors[field.id]"
+                :has-error="!!fieldErrors[field.id]"
+            />
+
+            <!-- Post Category Field Component (uses SelectField) -->
+            <SelectField
+                v-else-if="isPostCategoryFieldType(field.type)"
+                :field="field"
+                :form-id="formId"
+                v-model="formData[`input_${field.id}`]"
+                :error-message="fieldErrors[field.id]"
+                :has-error="!!fieldErrors[field.id]"
+            />
+
+            <!-- Post Image Field Component -->
+            <PostImageField
+                v-else-if="isPostImageFieldType(field.type)"
+                :field="field"
+                :form-id="formId"
+                v-model="formData[`input_${field.id}`]"
+                :error-message="fieldErrors[field.id]"
+                :has-error="!!fieldErrors[field.id]"
+            />
+
+            <!-- Post Custom Field Component -->
+            <PostCustomField
+                v-else-if="isPostCustomFieldType(field.type)"
                 :field="field"
                 :form-id="formId"
                 v-model="formData[`input_${field.id}`]"

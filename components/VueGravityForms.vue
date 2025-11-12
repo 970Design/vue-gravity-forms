@@ -14,6 +14,7 @@ import SectionBreakField from "./form/SectionBreakField.vue";
 import AddressField from "./form/AddressField.vue";
 import ImageChoiceField from "./form/ImageChoiceField.vue";
 import NameField from "./form/NameField.vue";
+import PricingField from "./form/PricingField.vue";
 
 import { useFieldComponents } from './composables/useFieldComponents';
 import { useConditionalLogic } from './composables/useConditionalLogic';
@@ -556,6 +557,47 @@ const performFormSubmission = async () => {
       return; // Skip other processing for file fields
     }
 
+    // Handle Product fields SECOND (before generic object handling)
+    if (field && isProductFieldType(field.type)) {
+      if (field.inputType === 'singleproduct') {
+        // Send all three sub-inputs explicitly
+        fd.append(`input_${fieldId}.1`, field.label);
+        const numericPrice = field.basePrice ? field.basePrice.replace(/[^0-9.-]/g, '') : '0';
+        fd.append(`input_${fieldId}.2`, numericPrice);
+
+        const quantityEnabled = !field.disableQuantity;
+        if (quantityEnabled && fieldValue && fieldValue.quantity !== null && fieldValue.quantity !== undefined && fieldValue.quantity !== '') {
+          fd.append(`input_${fieldId}.3`, fieldValue.quantity);
+        }
+      } else if (field.inputType === 'radio' || field.inputType === 'select') {
+        // For radio/select, send in format: "value|price"
+        if (fieldValue && fieldValue.value && fieldValue.price !== undefined) {
+          const numericPrice = fieldValue.price.toString().replace(/[^0-9.-]/g, '');
+          fd.append(`input_${fieldId}`, `${fieldValue.value}|${numericPrice}`);
+        } else if (fieldValue && fieldValue.value) {
+          // Fallback if price is not in fieldValue
+          fd.append(`input_${fieldId}`, fieldValue.value);
+        }
+        const quantityEnabled = !field.disableQuantity;
+        if (quantityEnabled && fieldValue && fieldValue.quantity !== null && fieldValue.quantity !== undefined && fieldValue.quantity !== '') {
+          fd.append(`input_${fieldId}.3`, fieldValue.quantity);
+        }
+      } else if (field.inputType === 'hiddenproduct') {
+        fd.append(`input_${fieldId}.1`, field.label);
+        const numericPrice = field.basePrice ? field.basePrice.replace(/[^0-9.-]/g, '') : '0';
+        fd.append(`input_${fieldId}.2`, numericPrice);
+        const quantityEnabled = !field.disableQuantity;
+        if (quantityEnabled) {
+          fd.append(`input_${fieldId}.3`, (fieldValue && fieldValue.quantity) || 1);
+        }
+      } else if (field.inputType === 'calculation') {
+        fd.append(`input_${fieldId}.1`, field.label);
+        const numericPrice = (fieldValue && fieldValue.price) ? fieldValue.price.replace(/[^0-9.-]/g, '') : '0';
+        fd.append(`input_${fieldId}.2`, numericPrice);
+      }
+      return;
+    }
+
     // Handle arrays (checkboxes, multiselect)
     if (Array.isArray(fieldValue)) {
       if (field && isCheckboxFieldType(field.type)) {
@@ -611,39 +653,6 @@ const performFormSubmission = async () => {
             }
           });
         }
-      }
-    }
-    // Handle Product fields
-    else if (field && isProductFieldType(field.type)) {
-      if (field.inputType === 'singleproduct') {
-        // For single product, we don't need to send product name and price
-        // as they're already in hidden inputs in the component
-        // Only send quantity if enabled
-        const quantityEnabled = !field.disableQuantity;
-        if (quantityEnabled && fieldValue.quantity !== null && fieldValue.quantity !== undefined && fieldValue.quantity !== '') {
-          fd.append(`input_${fieldId}.3`, fieldValue.quantity);
-        }
-      } else if (field.inputType === 'radio' || field.inputType === 'select') {
-        if (fieldValue.value) {
-          fd.append(fieldKey, fieldValue.value);
-        }
-        const quantityEnabled = !field.disableQuantity;
-        if (quantityEnabled && fieldValue.quantity !== null && fieldValue.quantity !== undefined && fieldValue.quantity !== '') {
-          fd.append(`input_${fieldId}.3`, fieldValue.quantity);
-        }
-      } else if (field.inputType === 'hiddenproduct') {
-        fd.append(`input_${fieldId}.1`, field.label);
-        // Extract numeric price from basePrice
-        const numericPrice = field.basePrice ? field.basePrice.replace(/[^0-9.-]/g, '') : '0';
-        fd.append(`input_${fieldId}.2`, numericPrice);
-        const quantityEnabled = !field.disableQuantity;
-        if (quantityEnabled) {
-          fd.append(`input_${fieldId}.3`, fieldValue.quantity || 1);
-        }
-      } else if (field.inputType === 'calculation') {
-        fd.append(`input_${fieldId}.1`, field.label);
-        const numericPrice = fieldValue.price ? fieldValue.price.replace(/[^0-9.-]/g, '') : '0';
-        fd.append(`input_${fieldId}.2`, numericPrice);
       }
     }
     // Handle Option fields (checkbox type with multiple selections)

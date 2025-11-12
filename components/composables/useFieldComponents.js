@@ -38,6 +38,7 @@ export function useFieldComponents(customComponents) {
 		address: AddressField,
 		image_choice: ImageChoiceField,
 		name: NameField,
+
 		// Pricing fields
 		product: PricingField,
 		// quantity: QuantityField,

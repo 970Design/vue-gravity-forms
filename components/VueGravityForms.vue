@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted, nextTick, computed } from "vue";
+import { ref, reactive, onMounted, nextTick, computed, provide } from "vue";
 import { load } from 'recaptcha-v3';
 import TextField from "./form/TextField.vue";
 import TextareaField from "./form/TextareaField.vue";
@@ -15,6 +15,7 @@ import AddressField from "./form/AddressField.vue";
 import ImageChoiceField from "./form/ImageChoiceField.vue";
 import NameField from "./form/NameField.vue";
 import PricingField from "./form/PricingField.vue";
+import TotalField from "./form/TotalField.vue";
 
 import { useFieldComponents } from './composables/useFieldComponents';
 import { useConditionalLogic } from './composables/useConditionalLogic';
@@ -63,6 +64,10 @@ const formPages = ref([]);
 
 // All fields (for conditional logic evaluation)
 const allFields = computed(() => form.value?.fields || []);
+
+// Enhance data sharing across components
+provide('formData', formData)
+provide('allFields', allFields)
 
 // Validation and normalization of endpoint URL
 if (endpoint) {
@@ -1125,12 +1130,12 @@ onMounted(() => {
 <!--            />-->
 
             <!-- Total Field Component -->
-<!--            <TotalField-->
-<!--                v-else-if="isTotalFieldType(field.type)"-->
-<!--                :field="field"-->
-<!--                :form-id="formId"-->
-<!--                v-model="formData[`input_${field.id}`]"-->
-<!--            />-->
+            <TotalField
+                v-else-if="isTotalFieldType(field.type)"
+                :field="field"
+                :form-id="formId"
+                v-model="formData[`input_${field.id}`]"
+            />
 
             <!-- Other field types - fallback with helpful message -->
             <div
@@ -1233,7 +1238,6 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
 
 <style>
 /* Variables */

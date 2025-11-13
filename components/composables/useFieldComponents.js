@@ -44,7 +44,7 @@ export function useFieldComponents(customComponents) {
 		// quantity: QuantityField,
 		// option: OptionField,
 		// shipping: ShippingField,
-		// total: TotalField
+		total: TotalField
 	};
 
 	const fieldComponents = computed(() => ({

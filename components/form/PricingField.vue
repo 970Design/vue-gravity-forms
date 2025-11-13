@@ -205,6 +205,62 @@
       />
     </div>
 
+    <!-- User Defined Price Product -->
+    <div v-else-if="field.inputType === 'price'" class="ginput_container ginput_container_product ginput_container_price">
+      <!-- Product Name (hidden) -->
+      <input
+          type="hidden"
+          :name="`input_${field.id}.1`"
+          :value="field.label"
+      />
+
+      <!-- User-entered Price Input -->
+      <div class="ginput_product_price_wrapper">
+        <label
+            :for="`input_${formId}_${field.id}_2`"
+            class="ginput_product_price_label gform-field-label"
+        >
+          Price
+        </label>
+        <div class="ginput_price">
+          <span class="ginput_currency_symbol">{{ currencySymbol }}</span>
+          <input
+              type="number"
+              :id="`input_${formId}_${field.id}_2`"
+              :name="`input_${field.id}.2`"
+              class="ginput_amount"
+              step="0.01"
+              min="0"
+              :value="modelValue.price || ''"
+              @input="updateValue('price', $event.target.value)"
+              :required="field.isRequired"
+              :aria-label="`Price for ${field.label}`"
+          />
+        </div>
+      </div>
+
+      <!-- Quantity (if enabled) -->
+      <template v-if="!field.disableQuantity">
+        <div class="ginput_quantity">
+          <label
+              :for="`input_${formId}_${field.id}_3`"
+              class="ginput_quantity_label gform-field-label"
+          >
+            Quantity
+          </label>
+          <input
+              :id="`input_${formId}_${field.id}_3`"
+              :name="`input_${field.id}.3`"
+              type="number"
+              :value="modelValue.quantity || ''"
+              @input="updateValue('quantity', $event.target.value)"
+              min="0"
+              class="large ginput_quantity"
+          />
+        </div>
+      </template>
+    </div>
+
     <div
         v-if="field.description && field.descriptionPlacement !== 'above' && field.descriptionPlacement !== 'hidden'"
         class="gfield_description gfield_description_below_input"

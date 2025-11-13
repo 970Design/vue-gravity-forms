@@ -354,6 +354,12 @@ const fetchForm = async () => {
             product_name: field.label || '',
             price: '0'
           };
+        } else if (field.inputType === 'price') {
+          const quantityEnabled = !field.disableQuantity;
+          initialData[fieldKey] = {
+            price: field.defaultValue || '',
+            quantity: quantityEnabled ? '' : null
+          };
         } else {
           // radio or select
           const quantityEnabled = !field.disableQuantity;
@@ -594,6 +600,15 @@ const performFormSubmission = async () => {
         fd.append(`input_${fieldId}.1`, field.label);
         const numericPrice = (fieldValue && fieldValue.price) ? fieldValue.price.replace(/[^0-9.-]/g, '') : '0';
         fd.append(`input_${fieldId}.2`, numericPrice);
+      } else if (field.inputType === 'price') {
+        fd.append(`input_${fieldId}.1`, field.label);
+        const userPrice = (fieldValue && fieldValue.price) ? fieldValue.price.toString().replace(/[^0-9.-]/g, '') : '0';
+        fd.append(`input_${fieldId}.2`, userPrice);
+
+        const quantityEnabled = !field.disableQuantity;
+        if (quantityEnabled && fieldValue && fieldValue.quantity !== null && fieldValue.quantity !== undefined && fieldValue.quantity !== '') {
+          fd.append(`input_${fieldId}.3`, fieldValue.quantity);
+        }
       }
       return;
     }

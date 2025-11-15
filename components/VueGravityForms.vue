@@ -15,6 +15,7 @@ import AddressField from "./form/AddressField.vue";
 import ImageChoiceField from "./form/ImageChoiceField.vue";
 import NameField from "./form/NameField.vue";
 import PricingField from "./form/PricingField.vue";
+import OptionField from "./form/OptionField.vue";
 import TotalField from "./form/TotalField.vue";
 
 import { useFieldComponents } from './composables/useFieldComponents';
@@ -302,7 +303,6 @@ const fetchForm = async () => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('API Error Response:', errorText);
 
       let errorData;
       try {
@@ -381,9 +381,9 @@ const fetchForm = async () => {
       }
       else if (isOptionFieldType(field.type)) {
         if (field.inputType === 'checkbox') {
-          initialData[fieldKey] = [];
+          initialData[fieldKey] = []; // Array for checkboxes
         } else {
-          initialData[fieldKey] = '';
+          initialData[fieldKey] = ''; // String for radio/select
         }
       }
       else if (isShippingFieldType(field.type)) {
@@ -568,7 +568,7 @@ const performFormSubmission = async () => {
       return; // Skip other processing for file fields
     }
 
-    // Handle Product fields SECOND (before generic object handling)
+    // Handle Product fields SECOND
     if (field && isProductFieldType(field.type)) {
       if (field.inputType === 'singleproduct') {
         // Send all three sub-inputs explicitly
@@ -614,6 +614,37 @@ const performFormSubmission = async () => {
         if (quantityEnabled && fieldValue && fieldValue.quantity !== null && fieldValue.quantity !== undefined && fieldValue.quantity !== '') {
           fd.append(`input_${fieldId}.3`, fieldValue.quantity);
         }
+      }
+      return;
+    }
+
+    // Handle Option fields THIRD
+    if (field && isOptionFieldType(field.type)) {
+      if (field.inputType === 'checkbox') {
+        if (Array.isArray(fieldValue) && fieldValue.length > 0) {
+          fieldValue.forEach((selectedValue) => {
+            const choiceIndex = field.choices.findIndex(choice => choice.value === selectedValue);
+
+            if (choiceIndex !== -1) {
+              const choice = field.choices[choiceIndex];
+              fd.append(`input_${fieldId}.${choiceIndex + 1}`, choice.value);
+            }
+          });
+        }
+      } else if (field.inputType === 'radio' || field.inputType === 'select') {
+        if (fieldValue) {
+          fd.append(fieldKey, fieldValue);
+        }
+      }
+      return;
+    }
+
+    // Handle Quantity fields (must be linked to products)
+    if (field && isQuantityFieldType(field.type)) {
+      // Quantity fields should be handled by their associated product field
+      // They're sent as input_X where X is the quantity field ID
+      if (fieldValue) {
+        fd.append(fieldKey, fieldValue);
       }
       return;
     }
@@ -673,17 +704,6 @@ const performFormSubmission = async () => {
             }
           });
         }
-      }
-    }
-    // Handle Option fields (checkbox type with multiple selections)
-    else if (field && isOptionFieldType(field.type) && field.inputType === 'checkbox') {
-      if (Array.isArray(fieldValue) && fieldValue.length > 0) {
-        fieldValue.forEach((selectedValue, idx) => {
-          const choiceIndex = field.choices.findIndex(choice => choice.value === selectedValue);
-          if (choiceIndex !== -1) {
-            fd.append(`input_${fieldId}.${choiceIndex + 1}`, selectedValue);
-          }
-        });
       }
     }
 
@@ -1110,14 +1130,14 @@ onMounted(() => {
 <!--            />-->
 
             <!-- Option Field Component -->
-<!--            <OptionField-->
-<!--                v-else-if="isOptionFieldType(field.type)"-->
-<!--                :field="field"-->
-<!--                :form-id="formId"-->
-<!--                v-model="formData[`input_${field.id}`]"-->
-<!--                :error-message="fieldErrors[field.id]"-->
-<!--                :has-error="!!fieldErrors[field.id]"-->
-<!--            />-->
+            <OptionField
+                v-else-if="isOptionFieldType(field.type)"
+                :field="field"
+                :form-id="formId"
+                v-model="formData[`input_${field.id}`]"
+                :error-message="fieldErrors[field.id]"
+                :has-error="!!fieldErrors[field.id]"
+            />
 
             <!-- Shipping Field Component -->
 <!--            <ShippingField-->

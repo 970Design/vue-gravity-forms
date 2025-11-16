@@ -13,7 +13,7 @@
       <span v-if="field.isRequired" class="gfield_required">
         <span class="gfield_required_asterisk">*</span>
       </span>
-      <span v-if="field.inputType === 'singleproduct' && !field.disableQuantity" class="screen-reader-text">Quantity</span>
+      <span v-if="field.inputType === 'singleproduct' && !field.disableQuantity" class="gfield_visibility_hidden">Quantity</span>
     </label>
 
     <div
@@ -53,8 +53,8 @@
           :value="formatPriceWithCurrency(field.basePrice)"
       />
 
-      <!-- Quantity input - check disableQuantity flag -->
-      <template v-if="!field.disableQuantity">
+      <!-- Quantity input - check disableQuantity flag AND if separate quantity field is mapped -->
+      <template v-if="!field.disableQuantity && !hasQuantityFieldMapping()">
         <label
             :for="`ginput_quantity_${formId}_${field.id}_1`"
             class="ginput_quantity_label gform-field-label"
@@ -69,7 +69,7 @@
             class="ginput_quantity"
             size="10"
             min="0"
-            :value="modelValue.quantity || ''"
+            :value="getQuantityValue()"
             @input="updateValue('quantity', $event.target.value)"
             :aria-label="`Quantity ${field.label}`"
             :aria-describedby="`ginput_product_price_${formId}_${field.id}`"
@@ -280,7 +280,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 
 const props = defineProps({
   field: {
@@ -306,6 +306,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue'])
+
+const formData = inject('formData', { value: {} })
+const allFields = inject('allFields', { value: [] })
 
 const currencySymbol = computed(() => {
   // Extract currency symbol from basePrice if available, otherwise default to $
@@ -366,6 +369,54 @@ const formatPrice = (price) => {
 // Format price with currency symbol
 const formatPriceWithCurrency = (price) => {
   return `${currencySymbol.value}${formatPrice(price)}`
+}
+
+// Check if this product has a separate Quantity field mapped to it
+const hasQuantityFieldMapping = () => {
+  if (!allFields.value || allFields.value.length === 0) {
+    return false
+  }
+
+  const quantityFields = allFields.value.filter(f => f.type === 'quantity')
+
+  const hasMapping = allFields.value.some(field => {
+    const isMatch = field.type === 'quantity' &&
+        field.productField &&
+        field.productField == props.field.id
+
+    return isMatch
+  })
+
+  return hasMapping
+}
+
+// Get the mapped quantity field object (if exists)
+const getMappedQuantityField = () => {
+  console.log('getMappedQuantityField called for product:', props.field.id)
+
+  if (!allFields.value || allFields.value.length === 0) {
+    return null
+  }
+
+  const mappedField = allFields.value.find(field => {
+    return field.type === 'quantity' &&
+        field.productField &&
+        field.productField == props.field.id
+  })
+
+  return mappedField
+}
+
+// Get the quantity value - either from mapped field or from product's own quantity
+const getQuantityValue = () => {
+  const mappedQuantityField = getMappedQuantityField()
+
+  if (mappedQuantityField) {
+    const quantityFieldKey = `input_${mappedQuantityField.id}`
+    return formData.value[quantityFieldKey] || ''
+  }
+
+  return props.modelValue.quantity || ''
 }
 
 const getFieldClasses = () => {

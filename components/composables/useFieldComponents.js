@@ -41,8 +41,8 @@ export function useFieldComponents(customComponents) {
 
 		// Pricing fields
 		product: PricingField,
-		// quantity: QuantityField,
-		option: OptionField,
+		quantity: QuantityField,
+		// option: OptionField,
 		// shipping: ShippingField,
 		total: TotalField
 	};

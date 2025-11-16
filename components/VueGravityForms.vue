@@ -15,7 +15,8 @@ import AddressField from "./form/AddressField.vue";
 import ImageChoiceField from "./form/ImageChoiceField.vue";
 import NameField from "./form/NameField.vue";
 import PricingField from "./form/PricingField.vue";
-import OptionField from "./form/OptionField.vue";
+import QuantityField from "./form/QuantityField.vue";
+// import OptionField from "./form/OptionField.vue";
 import TotalField from "./form/TotalField.vue";
 
 import { useFieldComponents } from './composables/useFieldComponents';
@@ -1120,24 +1121,24 @@ onMounted(() => {
             />
 
             <!-- Quantity Field Component -->
-<!--            <QuantityField-->
-<!--                v-else-if="isQuantityFieldType(field.type)"-->
-<!--                :field="field"-->
-<!--                :form-id="formId"-->
-<!--                v-model="formData[`input_${field.id}`]"-->
-<!--                :error-message="fieldErrors[field.id]"-->
-<!--                :has-error="!!fieldErrors[field.id]"-->
-<!--            />-->
-
-            <!-- Option Field Component -->
-            <OptionField
-                v-else-if="isOptionFieldType(field.type)"
+            <QuantityField
+                v-else-if="isQuantityFieldType(field.type)"
                 :field="field"
                 :form-id="formId"
                 v-model="formData[`input_${field.id}`]"
                 :error-message="fieldErrors[field.id]"
                 :has-error="!!fieldErrors[field.id]"
             />
+
+            <!-- Option Field Component -->
+<!--            <OptionField-->
+<!--                v-else-if="isOptionFieldType(field.type)"-->
+<!--                :field="field"-->
+<!--                :form-id="formId"-->
+<!--                v-model="formData[`input_${field.id}`]"-->
+<!--                :error-message="fieldErrors[field.id]"-->
+<!--                :has-error="!!fieldErrors[field.id]"-->
+<!--            />-->
 
             <!-- Shipping Field Component -->
 <!--            <ShippingField-->

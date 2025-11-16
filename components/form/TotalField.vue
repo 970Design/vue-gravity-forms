@@ -70,6 +70,17 @@ const currencySymbol = computed(() => {
   return props.field.currencySymbol || '$'
 })
 
+// Get mapped quantity field for a product
+const getMappedQuantityField = (productFieldId) => {
+  if (!allFields?.value || allFields.value.length === 0) return null
+
+  return allFields.value.find(field => {
+    return field.type === 'quantity' &&
+        field.productField &&
+        field.productField == productFieldId
+  })
+}
+
 const calculatedTotal = computed(() => {
   if (!formData?.value || !allFields?.value) {
     return '0.00'
@@ -91,23 +102,60 @@ const calculatedTotal = computed(() => {
 
       if (field.inputType === 'singleproduct') {
         productPrice = parseFloat(extractNumericPrice(field.basePrice))
-        quantity = parseInt(fieldValue.quantity) || 0
+
+        // Check for mapped quantity field first
+        const mappedQuantityField = getMappedQuantityField(field.id)
+        if (mappedQuantityField) {
+          const quantityFieldKey = `input_${mappedQuantityField.id}`
+          quantity = parseInt(formData.value[quantityFieldKey]) || 0
+        } else {
+          quantity = parseInt(fieldValue.quantity) || 0
+        }
+
       } else if (field.inputType === 'radio' || field.inputType === 'select') {
         productPrice = parseFloat(extractNumericPrice(fieldValue.price || '0'))
-        quantity = !field.disableQuantity ? (parseInt(fieldValue.quantity) || 0) : 1
+
+        // Check for mapped quantity field
+        const mappedQuantityField = getMappedQuantityField(field.id)
+        if (mappedQuantityField) {
+          const quantityFieldKey = `input_${mappedQuantityField.id}`
+          quantity = parseInt(formData.value[quantityFieldKey]) || 0
+        } else if (!field.disableQuantity) {
+          quantity = parseInt(fieldValue.quantity) || 0
+        }
+
       } else if (field.inputType === 'hiddenproduct') {
         productPrice = parseFloat(extractNumericPrice(field.basePrice))
-        quantity = !field.disableQuantity ? (fieldValue.quantity || 1) : 1
+
+        // Check for mapped quantity field
+        const mappedQuantityField = getMappedQuantityField(field.id)
+        if (mappedQuantityField) {
+          const quantityFieldKey = `input_${mappedQuantityField.id}`
+          quantity = parseInt(formData.value[quantityFieldKey]) || 1
+        } else if (!field.disableQuantity) {
+          quantity = fieldValue.quantity || 1
+        }
+
       } else if (field.inputType === 'calculation') {
         productPrice = parseFloat(extractNumericPrice(fieldValue.price || '0'))
         quantity = 1
+
       } else if (field.inputType === 'price') {
         productPrice = parseFloat(extractNumericPrice(fieldValue.price || '0'))
-        quantity = !field.disableQuantity ? (parseInt(fieldValue.quantity) || 0) : 1
+
+        // Check for mapped quantity field
+        const mappedQuantityField = getMappedQuantityField(field.id)
+        if (mappedQuantityField) {
+          const quantityFieldKey = `input_${mappedQuantityField.id}`
+          quantity = parseInt(formData.value[quantityFieldKey]) || 0
+        } else if (!field.disableQuantity) {
+          quantity = parseInt(fieldValue.quantity) || 0
+        }
       }
 
       if (!isNaN(productPrice) && !isNaN(quantity) && quantity > 0) {
-        total += productPrice * quantity
+        const subtotal = productPrice * quantity
+        total += subtotal
       }
     }
 

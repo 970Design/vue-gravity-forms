@@ -17,6 +17,7 @@ import NameField from "./form/NameField.vue";
 import PricingField from "./form/PricingField.vue";
 import QuantityField from "./form/QuantityField.vue";
 // import OptionField from "./form/OptionField.vue";
+import ShippingField from "./form/ShippingField.vue";
 import TotalField from "./form/TotalField.vue";
 
 import { useFieldComponents } from './composables/useFieldComponents';
@@ -1141,14 +1142,14 @@ onMounted(() => {
 <!--            />-->
 
             <!-- Shipping Field Component -->
-<!--            <ShippingField-->
-<!--                v-else-if="isShippingFieldType(field.type)"-->
-<!--                :field="field"-->
-<!--                :form-id="formId"-->
-<!--                v-model="formData[`input_${field.id}`]"-->
-<!--                :error-message="fieldErrors[field.id]"-->
-<!--                :has-error="!!fieldErrors[field.id]"-->
-<!--            />-->
+            <ShippingField
+                v-else-if="isShippingFieldType(field.type)"
+                :field="field"
+                :form-id="formId"
+                v-model="formData[`input_${field.id}`]"
+                :error-message="fieldErrors[field.id]"
+                :has-error="!!fieldErrors[field.id]"
+            />
 
             <!-- Total Field Component -->
             <TotalField

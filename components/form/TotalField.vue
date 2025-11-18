@@ -183,12 +183,21 @@ const calculatedTotal = computed(() => {
     }
 
     // Shipping fields
-    if (field.type === 'shipping' && fieldValue) {
-      const choice = field.choices?.find(c => c.value === fieldValue)
-      if (choice?.price) {
-        const shippingPrice = parseFloat(extractNumericPrice(choice.price))
+    if (field.type === 'shipping') {
+      if (field.inputType === 'singleshipping') {
+        // Single shipping method - use basePrice directly
+        const shippingPrice = parseFloat(extractNumericPrice(field.basePrice || '0'))
         if (!isNaN(shippingPrice)) {
           total += shippingPrice
+        }
+      } else if (fieldValue) {
+        // Radio or select - find the selected choice
+        const choice = field.choices?.find(c => c.value === fieldValue)
+        if (choice?.price) {
+          const shippingPrice = parseFloat(extractNumericPrice(choice.price))
+          if (!isNaN(shippingPrice)) {
+            total += shippingPrice
+          }
         }
       }
     }

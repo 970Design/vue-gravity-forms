@@ -43,7 +43,7 @@ export function useFieldComponents(customComponents) {
 		product: PricingField,
 		quantity: QuantityField,
 		// option: OptionField,
-		// shipping: ShippingField,
+		shipping: ShippingField,
 		total: TotalField
 	};
 

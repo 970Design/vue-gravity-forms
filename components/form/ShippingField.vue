@@ -144,7 +144,6 @@ const emit = defineEmits(['update:modelValue'])
 // For single shipping, automatically set the value on mount
 onMounted(() => {
   if (props.field.inputType === 'singleshipping') {
-    // Set the shipping name as the value
     emit('update:modelValue', props.field.label)
   }
 })
@@ -168,6 +167,7 @@ const currencySymbol = computed(() => {
 })
 
 const updateValue = (value) => {
+  // Just emit the choice value, not "value|price"
   emit('update:modelValue', value)
 }
 

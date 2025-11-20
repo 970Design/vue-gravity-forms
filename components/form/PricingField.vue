@@ -392,8 +392,6 @@ const hasQuantityFieldMapping = () => {
 
 // Get the mapped quantity field object (if exists)
 const getMappedQuantityField = () => {
-  console.log('getMappedQuantityField called for product:', props.field.id)
-
   if (!allFields.value || allFields.value.length === 0) {
     return null
   }

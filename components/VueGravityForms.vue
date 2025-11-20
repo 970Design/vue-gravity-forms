@@ -16,7 +16,7 @@ import ImageChoiceField from "./form/ImageChoiceField.vue";
 import NameField from "./form/NameField.vue";
 import PricingField from "./form/PricingField.vue";
 import QuantityField from "./form/QuantityField.vue";
-// import OptionField from "./form/OptionField.vue";
+import OptionField from "./form/OptionField.vue";
 import ShippingField from "./form/ShippingField.vue";
 import TotalField from "./form/TotalField.vue";
 
@@ -629,11 +629,13 @@ const performFormSubmission = async () => {
 
             if (choiceIndex !== -1) {
               const choice = field.choices[choiceIndex];
-              fd.append(`input_${fieldId}.${choiceIndex + 1}`, choice.value);
+              // Send as input_X.Y format for checkboxes
+              fd.append(`input_${fieldId}.${choiceIndex + 1}`, String(choiceIndex + 1));
             }
           });
         }
       } else if (field.inputType === 'radio' || field.inputType === 'select') {
+        // For radio/select, send just the value - backend will convert to text|price format
         if (fieldValue) {
           fd.append(fieldKey, fieldValue);
         }
@@ -1132,14 +1134,14 @@ onMounted(() => {
             />
 
             <!-- Option Field Component -->
-<!--            <OptionField-->
-<!--                v-else-if="isOptionFieldType(field.type)"-->
-<!--                :field="field"-->
-<!--                :form-id="formId"-->
-<!--                v-model="formData[`input_${field.id}`]"-->
-<!--                :error-message="fieldErrors[field.id]"-->
-<!--                :has-error="!!fieldErrors[field.id]"-->
-<!--            />-->
+            <OptionField
+                v-else-if="isOptionFieldType(field.type)"
+                :field="field"
+                :form-id="formId"
+                v-model="formData[`input_${field.id}`]"
+                :error-message="fieldErrors[field.id]"
+                :has-error="!!fieldErrors[field.id]"
+            />
 
             <!-- Shipping Field Component -->
             <ShippingField

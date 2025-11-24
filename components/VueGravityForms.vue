@@ -374,7 +374,7 @@ const fetchForm = async () => {
             value: '',
             text: '',
             price: '0',
-            quantity: quantityEnabled ? '' : null
+            quantity: quantityEnabled ? '1' : null
           };
         }
       }
@@ -573,48 +573,53 @@ const performFormSubmission = async () => {
     // Handle Product fields SECOND
     if (field && isProductFieldType(field.type)) {
       if (field.inputType === 'singleproduct') {
-        // Send all three sub-inputs explicitly
-        fd.append(`input_${fieldId}.1`, field.label);
+        fd.append(`input_${fieldId}_1`, field.label);
         const numericPrice = field.basePrice ? field.basePrice.replace(/[^0-9.-]/g, '') : '0';
-        fd.append(`input_${fieldId}.2`, numericPrice);
+        fd.append(`input_${fieldId}_2`, numericPrice);
 
         const quantityEnabled = !field.disableQuantity;
-        if (quantityEnabled && fieldValue && fieldValue.quantity !== null && fieldValue.quantity !== undefined && fieldValue.quantity !== '') {
-          fd.append(`input_${fieldId}.3`, fieldValue.quantity);
+        if (quantityEnabled) {
+          const qty = (fieldValue && fieldValue.quantity !== null && fieldValue.quantity !== undefined && fieldValue.quantity !== '')
+              ? String(fieldValue.quantity) : '1';
+          fd.append(`input_${fieldId}_3`, qty);
         }
       } else if (field.inputType === 'radio' || field.inputType === 'select') {
-        // For radio/select, send in format: "value|price"
         if (fieldValue && fieldValue.value && fieldValue.price !== undefined) {
           const numericPrice = fieldValue.price.toString().replace(/[^0-9.-]/g, '');
           fd.append(`input_${fieldId}`, `${fieldValue.value}|${numericPrice}`);
-        } else if (fieldValue && fieldValue.value) {
-          // Fallback if price is not in fieldValue
-          fd.append(`input_${fieldId}`, fieldValue.value);
         }
-        const quantityEnabled = !field.disableQuantity;
-        if (quantityEnabled && fieldValue && fieldValue.quantity !== null && fieldValue.quantity !== undefined && fieldValue.quantity !== '') {
-          fd.append(`input_${fieldId}.3`, fieldValue.quantity);
-        }
-      } else if (field.inputType === 'hiddenproduct') {
-        fd.append(`input_${fieldId}.1`, field.label);
-        const numericPrice = field.basePrice ? field.basePrice.replace(/[^0-9.-]/g, '') : '0';
-        fd.append(`input_${fieldId}.2`, numericPrice);
-        const quantityEnabled = !field.disableQuantity;
-        if (quantityEnabled) {
-          fd.append(`input_${fieldId}.3`, (fieldValue && fieldValue.quantity) || 1);
-        }
-      } else if (field.inputType === 'calculation') {
-        fd.append(`input_${fieldId}.1`, field.label);
-        const numericPrice = (fieldValue && fieldValue.price) ? fieldValue.price.replace(/[^0-9.-]/g, '') : '0';
-        fd.append(`input_${fieldId}.2`, numericPrice);
-      } else if (field.inputType === 'price') {
-        fd.append(`input_${fieldId}.1`, field.label);
-        const userPrice = (fieldValue && fieldValue.price) ? fieldValue.price.toString().replace(/[^0-9.-]/g, '') : '0';
-        fd.append(`input_${fieldId}.2`, userPrice);
 
         const quantityEnabled = !field.disableQuantity;
-        if (quantityEnabled && fieldValue && fieldValue.quantity !== null && fieldValue.quantity !== undefined && fieldValue.quantity !== '') {
-          fd.append(`input_${fieldId}.3`, fieldValue.quantity);
+        if (quantityEnabled) {
+          const qty = (fieldValue && fieldValue.quantity !== null && fieldValue.quantity !== undefined && fieldValue.quantity !== '')
+              ? String(fieldValue.quantity) : '1';
+          fd.append(`input_${fieldId}_3`, qty);
+        }
+      } else if (field.inputType === 'hiddenproduct') {
+        fd.append(`input_${fieldId}_1`, field.label);
+        const numericPrice = field.basePrice ? field.basePrice.replace(/[^0-9.-]/g, '') : '0';
+        fd.append(`input_${fieldId}_2`, numericPrice);
+
+        const quantityEnabled = !field.disableQuantity;
+        if (quantityEnabled) {
+          const qty = (fieldValue && fieldValue.quantity !== null && fieldValue.quantity !== undefined && fieldValue.quantity !== '')
+              ? String(fieldValue.quantity) : '1';
+          fd.append(`input_${fieldId}_3`, qty);
+        }
+      } else if (field.inputType === 'calculation') {
+        fd.append(`input_${fieldId}_1`, field.label);
+        const numericPrice = (fieldValue && fieldValue.price) ? fieldValue.price.replace(/[^0-9.-]/g, '') : '0';
+        fd.append(`input_${fieldId}_2`, numericPrice);
+      } else if (field.inputType === 'price') {
+        fd.append(`input_${fieldId}_1`, field.label);
+        const userPrice = (fieldValue && fieldValue.price) ? fieldValue.price.toString().replace(/[^0-9.-]/g, '') : '0';
+        fd.append(`input_${fieldId}_2`, userPrice);
+
+        const quantityEnabled = !field.disableQuantity;
+        if (quantityEnabled) {
+          const qty = (fieldValue && fieldValue.quantity !== null && fieldValue.quantity !== undefined && fieldValue.quantity !== '')
+              ? String(fieldValue.quantity) : '1';
+          fd.append(`input_${fieldId}_3`, qty);
         }
       }
       return;

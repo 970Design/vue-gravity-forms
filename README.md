@@ -1,6 +1,6 @@
 # What is Vue Gravity Forms?
 
-Vue Gravity Forms is a [Vue](https://vuejs.org/) 3 component which allows you to render and process [Gravity Forms](https://www.gravityforms.com/) in a headless [WordPress](https://wordpress.org/) environment via the Companion [WordPress Plugin](https://github.com/970Design/nsz-vue-gravity-forms-plugin).  This component will work in any environment where Vue is supported (such as [Astro.js](https://astro.build/)).  Currently, it supports all Basic and Advanced field types, confirmation messages and redirects, file uploads, multipage forms, and (optionally) Google reCAPTCHA v3.
+Vue Gravity Forms is a [Vue](https://vuejs.org/) 3 component which allows you to render and process [Gravity Forms](https://www.gravityforms.com/) in a headless [WordPress](https://wordpress.org/) environment via the Companion [WordPress Plugin](https://github.com/970Design/nsz-vue-gravity-forms-plugin).  This component will work in any environment where Vue is supported (such as [Astro.js](https://astro.build/)).  Currently, it supports all Basic, Advanced, and Pricing field types, confirmation messages and redirects, file uploads, multipage forms, and (optionally) Google reCAPTCHA v3.
 
 ## Setup Guide
 
@@ -11,7 +11,6 @@ Vue Gravity Forms is a [Vue](https://vuejs.org/) 3 component which allows you to
 - Import and use the `VueGravityForms` component in your front-end project, passing the required props (see example below) - including the `apiKey` which is provided by the companion WordPress plugin.
 
 ## Example Usage (with Astro.js)
-
 ```javascript
 ---
 import VueGravityForms from "@970design/vue-gravity-forms";
@@ -31,7 +30,6 @@ const apiKey = import.meta.env.GF_API_KEY;
 ```
 
 You can also include our default styling by importing the CSS file:
-
 ```css
 import '@970design/vue-gravity-forms/dist/style.css';
 ```
@@ -51,7 +49,6 @@ import '@970design/vue-gravity-forms/dist/style.css';
 You can override any default form field component by passing custom components through the `customComponents` prop. This allows you to customize the appearance and behavior of specific field types while maintaining the form's functionality.
 
 ### Example Usage
-
 ```vue  
 <VueGravityForms 
     :formId="formId" 
@@ -82,11 +79,15 @@ You can override any default form field component by passing custom components t
 | address | AddressField |
 | image_choice | ImageChoiceField |
 | name | NameField |
+| product | PricingField |
+| quantity | QuantityField |
+| option | OptionField |
+| shipping | ShippingField |
+| total | TotalField |
 
 ### Custom Component Interface
 
 Custom components must implement the following props interface:
-
 ```typescript 
 interface FieldComponentProps {
     field: Object // The field configuration object 
@@ -104,14 +105,17 @@ Fields, sections, and pages will automatically show or hide based on their defin
 
 This logic is handled reactively in Vue using the `useConditionalLogic` composable, ensuring seamless updates as users interact with the form.
 
+## Pricing Fields
+
+All Gravity Forms Pricing field types are fully supported, including Product (Single, Radio, Drop Down, User Defined Price, Hidden, Calculation), Quantity, Option, Shipping, and Total fields. Product quantities, options, and pricing are automatically calculated and submitted with form entries.
 
 ## Feature Roadmap
 
 - ~~Support for overriding field components~~
 - ~~Support for multipage forms~~
 - ~~Support for Conditional Logic~~
+- ~~Support for Pricing fields~~
 - Support for Post fields
-- Support for Pricing fields
 - Support for Gravity Forms Add-Ons (e.g. User Registration, etc)
 
 ## More Information

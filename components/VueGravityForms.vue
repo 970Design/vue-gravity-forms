@@ -14,6 +14,7 @@ import SectionBreakField from "./form/SectionBreakField.vue";
 import AddressField from "./form/AddressField.vue";
 import ImageChoiceField from "./form/ImageChoiceField.vue";
 import NameField from "./form/NameField.vue";
+import HtmlField from "./form/HtmlField.vue";
 
 import { useFieldComponents } from './composables/useFieldComponents';
 import { useConditionalLogic } from './composables/useConditionalLogic';
@@ -318,7 +319,7 @@ const fetchForm = async () => {
     // Initialize form data
     const initialData = {};
     form.value.fields.forEach(field => {
-      if (field.type === 'page') return;
+      if (field.type === 'page' || field.type === 'html') return;
 
       const fieldKey = `input_${field.id}`;
 
@@ -733,6 +734,10 @@ const isNameFieldType = (fieldType) => {
   return ['name'].includes(fieldType);
 };
 
+const isHtmlFieldType = (fieldType) => {
+  return ['html'].includes(fieldType);
+};
+
 onMounted(() => {
   if (!endpoint) {
     errorMessage.value = 'API endpoint not configured';
@@ -804,15 +809,7 @@ onMounted(() => {
         </div>
 
         <div :id="`gform_fields_${formId}`" class="gform_fields top_label form_sublabel_below description_below">
-          <component
-              v-for="field in currentPageFields"
-              :key="field.id"
-              :is="fieldComponents[field.type]"
-              :field="field"
-              :form-id="formId"
-              v-model="formData[`input_${field.id}`]"
-              :error-message="fieldErrors[field.id]"
-              :has-error="!!fieldErrors[field.id]">
+          <template v-for="field in currentPageFields" :key="field.id">
 
             <!-- Text Field Component -->
             <TextField
@@ -947,6 +944,13 @@ onMounted(() => {
                 :has-error="!!fieldErrors[field.id]"
             />
 
+            <!-- HTML Field Component -->
+            <HtmlField
+                v-else-if="isHtmlFieldType(field.type)"
+                :field="field"
+                :form-id="formId"
+            />
+
             <!-- Other field types - fallback with helpful message -->
             <div
                 v-else-if="!isPageFieldType(field.type)"
@@ -978,8 +982,9 @@ onMounted(() => {
                 {{ fieldErrors[field.id] }}
               </div>
             </div>
-          </component>
+          </template>
         </div>
+
       </div>
 
       <div class="gform_footer top_label">

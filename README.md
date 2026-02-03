@@ -82,6 +82,7 @@ You can override any default form field component by passing custom components t
 | address | AddressField |
 | image_choice | ImageChoiceField |
 | name | NameField |
+| html | HtmlField |
 
 ### Custom Component Interface
 
@@ -96,6 +97,8 @@ interface FieldComponentProps {
     hasError: boolean // Whether the field has an error 
 }
 ```
+
+**Note:** The `html` field type is display-only and does not use `modelValue`, `errorMessage`, or `hasError` props.
 
 ## Conditional Logic
 

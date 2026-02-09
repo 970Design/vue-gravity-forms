@@ -33,7 +33,7 @@ const apiKey = import.meta.env.GF_API_KEY;
 You can also include our default styling by importing the CSS file:
 
 ```css
-import '@970design/vue-gravity-forms/dist/style.css';
+import '@970design/vue-gravity-forms/dist/vue-gravity-forms.css';
 ```
 
 ## Props
@@ -52,15 +52,15 @@ You can override any default form field component by passing custom components t
 
 ### Example Usage
 
-```vue  
-<VueGravityForms 
-    :formId="formId" 
-    :endpoint="endpoint" 
+```vue
+<VueGravityForms
+    :formId="formId"
+    :endpoint="endpoint"
     :apiKey="gfApiKey"
     :recaptchaKey="recaptchaKey"
-    :customComponents="{ 
-        text: CustomTextField, 
-        textarea: CustomTextareaField 
+    :customComponents="{
+        text: CustomTextField,
+        textarea: CustomTextareaField
     }"
 />
 ```
@@ -88,13 +88,13 @@ You can override any default form field component by passing custom components t
 
 Custom components must implement the following props interface:
 
-```typescript 
+```typescript
 interface FieldComponentProps {
-    field: Object // The field configuration object 
-    modelValue: string // The field's current value (v-model) 
-    formId: string|number // The form ID 
-    errorMessage: string // Error message if validation fails 
-    hasError: boolean // Whether the field has an error 
+    field: Object // The field configuration object
+    modelValue: string // The field's current value (v-model)
+    formId: string|number // The form ID
+    errorMessage: string // Error message if validation fails
+    hasError: boolean // Whether the field has an error
 }
 ```
 
@@ -102,7 +102,7 @@ interface FieldComponentProps {
 
 ## Conditional Logic
 
-As of the latest release, **Conditional Logic** is fully supported.  
+As of the latest release, **Conditional Logic** is fully supported.
 Fields, sections, and pages will automatically show or hide based on their defined Gravity Forms logic rules — no additional setup is required.
 
 This logic is handled reactively in Vue using the `useConditionalLogic` composable, ensuring seamless updates as users interact with the form.

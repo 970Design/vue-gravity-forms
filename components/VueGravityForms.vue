@@ -14,6 +14,7 @@ import SectionBreakField from "./form/SectionBreakField.vue";
 import AddressField from "./form/AddressField.vue";
 import ImageChoiceField from "./form/ImageChoiceField.vue";
 import NameField from "./form/NameField.vue";
+import HtmlField from "./form/HtmlField.vue";
 import PricingField from "./form/PricingField.vue";
 import QuantityField from "./form/QuantityField.vue";
 import OptionField from "./form/OptionField.vue";
@@ -880,6 +881,10 @@ const isNameFieldType = (fieldType) => {
   return ['name'].includes(fieldType);
 };
 
+const isHtmlFieldType = (fieldType) => {
+  return ['html'].includes(fieldType);
+};
+
 const isPricingFieldType = (fieldType) => {
   return ['product', 'quantity', 'option', 'shipping', 'total'].includes(fieldType);
 };
@@ -1116,6 +1121,13 @@ onMounted(() => {
                 v-model="formData[`input_${field.id}`]"
                 :error-message="fieldErrors[field.id]"
                 :has-error="!!fieldErrors[field.id]"
+            />
+
+            <!-- HTML Field Component -->
+            <HtmlField
+                v-else-if="isHtmlFieldType(field.type)"
+                :field="field"
+                :form-id="formId"
             />
 
             <!-- Pricing Field Component (Product) -->

@@ -32,10 +32,6 @@ const props = defineProps({
     type: String,
     required: false
   },
-  recaptchaKey: {
-    type: String,
-    required: false
-  },
   customComponents: {
     type: Object,
     default: () => ({})
@@ -45,7 +41,6 @@ const props = defineProps({
 let endpoint = props.endpoint;
 const formId = props.formId;
 const apiKey = props.apiKey;
-const recaptchaKey = props.recaptchaKey;
 const form = ref(null);
 const formData = ref({});
 const loading = ref(false);
@@ -55,6 +50,23 @@ const fieldErrors = reactive({});
 const showForm = ref(true);
 
 const { fieldComponents } = useFieldComponents(props.customComponents);
+
+const recaptchaConfig = ref({ enabled: false, site_key: '' });
+const fetchRecaptchaConfig = async () => {
+  try {
+    const response = await fetch(`${endpoint}/wp-json/gf-headless/v1/recaptcha/config`, {
+      method: 'GET',
+      headers: getApiHeaders(),
+    });
+
+    if (!response.ok) return;
+
+    const data = await response.json();
+    recaptchaConfig.value = data;
+  } catch (error) {
+    console.error('Failed to fetch reCAPTCHA config:', error);
+  }
+};
 
 // Multi-step functionality
 const currentPage = ref(1);
@@ -459,13 +471,18 @@ const scrollToFirstError = () => {
 };
 
 // Submit form using the new secure endpoint
-const performFormSubmission = async () => {
+const performFormSubmission = async (recaptchaToken = null) => {
   loading.value = true;
   errorMessage.value = "";
   successMessage.value = "";
   Object.keys(fieldErrors).forEach(key => delete fieldErrors[key]);
 
   const fd = new FormData();
+
+  // Append reCAPTCHA token if provided
+  if (recaptchaToken) {
+    fd.append('recaptcha_token', recaptchaToken);
+  }
 
   // Get all visible fields for submission (considering conditional logic)
   const visibleFields = form.value.fields.filter(field => {
@@ -640,31 +657,29 @@ const submitForm = async (event) => {
     event.preventDefault();
   }
 
-  // Final validation of all required fields
   if (!validateCurrentPage()) {
     scrollToFirstError();
     return;
   }
 
-  // If reCAPTCHA key is provided, verify with reCAPTCHA first
-  if (recaptchaKey) {
+  if (recaptchaConfig.value.enabled && recaptchaConfig.value.site_key) {
     try {
-      const recaptcha = await load(recaptchaKey);
+      const recaptcha = await load(recaptchaConfig.value.site_key);
       const token = await recaptcha.execute('gravityform');
 
-      if (token && (!event || event.isTrusted)) {
-        await performFormSubmission();
-      } else {
+      if (!token) {
         errorMessage.value = 'reCAPTCHA verification failed. Please try again.';
         scrollToFirstError();
+        return;
       }
+
+      await performFormSubmission(token);
     } catch (error) {
       console.error('reCAPTCHA error:', error);
       errorMessage.value = 'reCAPTCHA verification failed. Please try again.';
       scrollToFirstError();
     }
   } else {
-    // No reCAPTCHA, submit directly
     await performFormSubmission();
   }
 };
@@ -744,6 +759,7 @@ onMounted(() => {
     return;
   }
 
+  fetchRecaptchaConfig();
   fetchForm();
 });
 </script>

@@ -35,7 +35,11 @@ const props = defineProps({
   customComponents: {
     type: Object,
     default: () => ({})
-  }
+  },
+  fieldValues: {
+    type: Object,
+    default: () => ({})
+  },
 });
 
 let endpoint = props.endpoint;
@@ -357,6 +361,15 @@ const fetchForm = async () => {
       }
     });
     formData.value = initialData;
+
+    // Apply fieldValues overrides keyed by inputName
+    if (props.fieldValues && typeof props.fieldValues === 'object') {
+      form.value.fields.forEach(field => {
+        if (field.inputName && props.fieldValues[field.inputName] !== undefined) {
+          formData.value[`input_${field.id}`] = props.fieldValues[field.inputName];
+        }
+      });
+    }
 
   } catch (error) {
     console.error('Failed to load form:', error);

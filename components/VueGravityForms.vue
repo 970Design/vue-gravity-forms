@@ -14,6 +14,7 @@ import SectionBreakField from "./form/SectionBreakField.vue";
 import AddressField from "./form/AddressField.vue";
 import ImageChoiceField from "./form/ImageChoiceField.vue";
 import NameField from "./form/NameField.vue";
+import HtmlField from "./form/HtmlField.vue";
 import PostTitleField from "./form/PostTitleField.vue";
 // import PostContentField from "./form/PostContentField.vue";
 // import PostExcerptField from "./form/PostExcerptField.vue";
@@ -36,20 +37,19 @@ const props = defineProps({
     type: String,
     required: false
   },
-  recaptchaKey: {
-    type: String,
-    required: false
-  },
   customComponents: {
     type: Object,
     default: () => ({})
-  }
+  },
+  fieldValues: {
+    type: Object,
+    default: () => ({})
+  },
 });
 
 let endpoint = props.endpoint;
 const formId = props.formId;
 const apiKey = props.apiKey;
-const recaptchaKey = props.recaptchaKey;
 const form = ref(null);
 const formData = ref({});
 const loading = ref(false);
@@ -59,6 +59,23 @@ const fieldErrors = reactive({});
 const showForm = ref(true);
 
 const { fieldComponents } = useFieldComponents(props.customComponents);
+
+const recaptchaConfig = ref({ enabled: false, site_key: '' });
+const fetchRecaptchaConfig = async () => {
+  try {
+    const response = await fetch(`${endpoint}/wp-json/gf-headless/v1/recaptcha/config`, {
+      method: 'GET',
+      headers: getApiHeaders(),
+    });
+
+    if (!response.ok) return;
+
+    const data = await response.json();
+    recaptchaConfig.value = data;
+  } catch (error) {
+    console.error('Failed to fetch reCAPTCHA config:', error);
+  }
+};
 
 // Multi-step functionality
 const currentPage = ref(1);
@@ -314,7 +331,7 @@ const fetchForm = async () => {
     // Initialize form data
     const initialData = {};
     form.value.fields.forEach(field => {
-      if (field.type === 'page') return;
+      if (field.type === 'page' || field.type === 'html') return;
 
       const fieldKey = `input_${field.id}`;
 
@@ -340,6 +357,15 @@ const fetchForm = async () => {
       }
     });
     formData.value = initialData;
+
+    // Apply fieldValues overrides keyed by inputName
+    if (props.fieldValues && typeof props.fieldValues === 'object') {
+      form.value.fields.forEach(field => {
+        if (field.inputName && props.fieldValues[field.inputName] !== undefined) {
+          formData.value[`input_${field.id}`] = props.fieldValues[field.inputName];
+        }
+      });
+    }
 
   } catch (error) {
     console.error('Failed to load form:', error);
@@ -454,13 +480,25 @@ const scrollToFirstError = () => {
 };
 
 // Submit form using the new secure endpoint
-const performFormSubmission = async () => {
+const performFormSubmission = async (recaptchaToken = null) => {
   loading.value = true;
   errorMessage.value = "";
   successMessage.value = "";
   Object.keys(fieldErrors).forEach(key => delete fieldErrors[key]);
 
   const fd = new FormData();
+
+  // Append reCAPTCHA token if provided
+  if (recaptchaToken) {
+    fd.append('recaptcha_token', recaptchaToken);
+  }
+
+  // Get all visible fields for submission (considering conditional logic)
+  const visibleFields = form.value.fields.filter(field => {
+    if (field.type === 'page') return false;
+    const { isFieldVisible } = useConditionalLogic(field, formData, allFields);
+    return isFieldVisible.value;
+  });
 
   // Handle form data submission
   Object.entries(formData.value).forEach(([fieldKey, fieldValue]) => {
@@ -621,31 +659,29 @@ const submitForm = async (event) => {
     event.preventDefault();
   }
 
-  // Final validation of all required fields
   if (!validateCurrentPage()) {
     scrollToFirstError();
     return;
   }
 
-  // If reCAPTCHA key is provided, verify with reCAPTCHA first
-  if (recaptchaKey) {
+  if (recaptchaConfig.value.enabled && recaptchaConfig.value.site_key) {
     try {
-      const recaptcha = await load(recaptchaKey);
+      const recaptcha = await load(recaptchaConfig.value.site_key);
       const token = await recaptcha.execute('gravityform');
 
-      if (token && (!event || event.isTrusted)) {
-        await performFormSubmission();
-      } else {
+      if (!token) {
         errorMessage.value = 'reCAPTCHA verification failed. Please try again.';
         scrollToFirstError();
+        return;
       }
+
+      await performFormSubmission(token);
     } catch (error) {
       console.error('reCAPTCHA error:', error);
       errorMessage.value = 'reCAPTCHA verification failed. Please try again.';
       scrollToFirstError();
     }
   } else {
-    // No reCAPTCHA, submit directly
     await performFormSubmission();
   }
 };
@@ -715,6 +751,10 @@ const isNameFieldType = (fieldType) => {
   return ['name'].includes(fieldType);
 };
 
+const isHtmlFieldType = (fieldType) => {
+  return ['html'].includes(fieldType);
+};
+
 const isPostTitleFieldType = (fieldType) => {
   return ['post_title'].includes(fieldType);
 };
@@ -749,6 +789,7 @@ onMounted(() => {
     return;
   }
 
+  fetchRecaptchaConfig();
   fetchForm();
 });
 </script>
@@ -814,15 +855,7 @@ onMounted(() => {
         </div>
 
         <div :id="`gform_fields_${formId}`" class="gform_fields top_label form_sublabel_below description_below">
-          <component
-              v-for="field in currentPageFields"
-              :key="field.id"
-              :is="fieldComponents[field.type]"
-              :field="field"
-              :form-id="formId"
-              v-model="formData[`input_${field.id}`]"
-              :error-message="fieldErrors[field.id]"
-              :has-error="!!fieldErrors[field.id]">
+          <template v-for="field in currentPageFields" :key="field.id">
 
             <!-- Text Field Component -->
             <TextField
@@ -1027,6 +1060,13 @@ onMounted(() => {
                 :has-error="!!fieldErrors[field.id]"
             />
 
+            <!-- HTML Field Component -->
+            <HtmlField
+                v-else-if="isHtmlFieldType(field.type)"
+                :field="field"
+                :form-id="formId"
+            />
+
             <!-- Other field types - fallback with helpful message -->
             <div
                 v-else-if="!isPageFieldType(field.type)"
@@ -1058,8 +1098,9 @@ onMounted(() => {
                 {{ fieldErrors[field.id] }}
               </div>
             </div>
-          </component>
+          </template>
         </div>
+
       </div>
 
       <div class="gform_footer top_label">

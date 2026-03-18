@@ -17,6 +17,7 @@ declare module '@970design/vue-gravity-forms' {
         | 'address'
         | 'image_choice'
         | 'name'
+        | 'html'
 
     // Field choice type
     interface GravityFormFieldChoice {
@@ -38,6 +39,7 @@ declare module '@970design/vue-gravity-forms' {
         enableOtherChoice?: boolean
         multipleFiles?: boolean
         checkboxLabel?: string
+        content?: string
         nextButton?: {
             text?: string
         }
@@ -90,3 +92,4 @@ declare module '@/components/form/SectionBreakField.vue'
 declare module '@/components/form/AddressField.vue'
 declare module '@/components/form/ImageChoiceField.vue'
 declare module '@/components/form/NameField.vue'
+declare module '@/components/form/HtmlField.vue'

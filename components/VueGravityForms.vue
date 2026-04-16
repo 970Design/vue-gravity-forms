@@ -603,9 +603,9 @@ const performFormSubmission = async (recaptchaToken = null) => {
     // Handle simple values (text, textarea, select, radio, etc.)
     else if (fieldValue !== null && fieldValue !== undefined && fieldValue !== '') {
       if (field && field.type === 'consent') {
-        fd.append(`input_${fieldId}.1`, fieldValue);
+        fd.append(`input_${fieldId}_1`, fieldValue);
         if (fieldValue === '1') {
-          fd.append(`input_${fieldId}.2`, field.checkboxLabel || field.label || '');
+          fd.append(`input_${fieldId}_2`, field.checkboxLabel || field.label || '');
         }
       } else {
         fd.append(fieldKey, fieldValue);

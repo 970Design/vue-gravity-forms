@@ -64,8 +64,8 @@
           >
             <input
                 :id="`choice_${formId}_${field.id}_${index}`"
-                type="checkbox"
-                :name="`input_${field.id}[]`"
+                :type="isRadioBacked ? 'radio' : 'checkbox'"
+                :name="isRadioBacked ? `input_${field.id}` : `input_${field.id}[]`"
                 :value="choice.value"
                 :checked="isChoiceSelected(choice.value)"
                 @change="handleChoiceChange(choice.value, $event.target.checked)"
@@ -74,7 +74,7 @@
                 :aria-invalid="hasError"
                 :aria-describedby="getAriaDescribedBy()"
                 :disabled="choice.disabled || field.disabled"
-                class="gfield_checkbox"
+                :class="isRadioBacked ? 'gfield_radio' : 'gfield_checkbox'"
             />
             <label
                 :for="`choice_${formId}_${field.id}_${index}`"
@@ -91,6 +91,7 @@
             </label>
           </li>
         </ul>
+
         <!-- "Other" option input if enabled -->
         <div
             v-if="field.enableOtherChoice && isOtherSelected()"
@@ -162,85 +163,100 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'update:otherValue'])
 
-// Check if this is a consent field
 const isConsentField = computed(() => {
   return props.field.type === 'consent'
 })
 
-// Check if this is a complex field
 const isComplexField = computed(() => {
   return ['checkbox', 'multi_choice'].includes(props.field.type)
 })
 
-// Determine if label should be hidden (but still rendered)
+const isRadioBacked = computed(() => {
+  return props.field.inputType === 'radio'
+})
+
+const maxSelectableChoices = computed(() => {
+  const limit = props.field.choiceLimit
+  if (!limit || limit === 'unlimited') return Infinity
+  if (limit === 'single') return 1
+  const parsed = parseInt(limit, 10)
+  if (!isNaN(parsed)) return parsed
+  if (props.field.choiceLimitMax) return parseInt(props.field.choiceLimitMax, 10)
+  return Infinity
+})
+
 const shouldHideLabel = computed(() => {
-  // For consent fields, we don't hide the main label as it's inline
-  if (isConsentField.value) {
-    return false
-  }
-
-  // Hide label if labelPlacement is set to hidden_label
-  if (props.field.labelPlacement === 'hidden_label') {
-    return true
-  }
-
-  // Hide label if field visibility is hidden or administrative
-  if (props.field.visibility === 'hidden' || props.field.visibility === 'administrative') {
-    return true
-  }
-
+  if (isConsentField.value) return false
+  if (props.field.labelPlacement === 'hidden_label') return true
+  if (props.field.visibility === 'hidden' || props.field.visibility === 'administrative') return true
   return false
 })
 
-// Check if consent is checked (for consent fields)
 const isConsentChecked = computed(() => {
   if (!isConsentField.value) return false
   return props.modelValue === '1' || props.modelValue === 1 || props.modelValue === true
 })
 
-// Handle consent field changes
 const handleConsentChange = (event) => {
-  const checked = event.target.checked
-  emit('update:modelValue', checked ? '1' : '')
+  emit('update:modelValue', event.target.checked ? '1' : '')
+}
+
+const isChoiceSelected = (value) => {
+  if (isRadioBacked.value) return props.modelValue === value
+  return Array.isArray(props.modelValue) && props.modelValue.includes(value)
+}
+
+const isOtherSelected = () => {
+  return isChoiceSelected('gf_other_choice')
+}
+
+const hasAnySelection = () => {
+  if (isRadioBacked.value) return !!props.modelValue
+  return Array.isArray(props.modelValue) && props.modelValue.length > 0
+}
+
+const handleChoiceChange = (value, checked) => {
+  if (isRadioBacked.value) {
+    emit('update:modelValue', checked ? value : '')
+    return
+  }
+
+  let currentValues = Array.isArray(props.modelValue) ? [...props.modelValue] : []
+
+  if (checked) {
+    if (!currentValues.includes(value) && currentValues.length < maxSelectableChoices.value) {
+      currentValues.push(value)
+    }
+  } else {
+    currentValues = currentValues.filter(v => v !== value)
+  }
+
+  emit('update:modelValue', currentValues)
 }
 
 const getFieldClasses = () => {
   const classes = []
 
-  // Field type specific classes
   if (isConsentField.value) {
     classes.push('gfield_contains_consent')
   } else {
     classes.push('gfield_contains_checkbox')
   }
 
-  // Common classes
   classes.push(
       `field_sublabel_${props.field.subLabelPlacement || 'below'}`,
       `field_description_${props.field.descriptionPlacement || 'below'}`,
       `gfield_visibility_${props.field.visibility || 'visible'}`
   )
 
-  // Add label placement class
   if (props.field.labelPlacement) {
     classes.push(`field_${props.field.labelPlacement}`)
   }
 
-  if (props.field.isRequired) {
-    classes.push('gfield_contains_required')
-  }
-
-  if (props.hasError) {
-    classes.push('gfield_error')
-  }
-
-  if (props.field.size) {
-    classes.push(`field_size_${props.field.size}`)
-  }
-
-  if (props.field.cssClass) {
-    classes.push(props.field.cssClass)
-  }
+  if (props.field.isRequired) classes.push('gfield_contains_required')
+  if (props.hasError) classes.push('gfield_error')
+  if (props.field.size) classes.push(`field_size_${props.field.size}`)
+  if (props.field.cssClass) classes.push(props.field.cssClass)
 
   return classes.join(' ')
 }
@@ -248,12 +264,10 @@ const getFieldClasses = () => {
 const getCheckboxListClasses = () => {
   const classes = ['gfield_checkbox']
 
-  // Add layout classes based on field configuration
   if (props.field.choices && props.field.choices.length > 0) {
     if (props.field.choiceDirection === 'horizontal') {
       classes.push('gfield_checkbox_horizontal')
     }
-
     if (props.field.columns && props.field.columns > 1) {
       classes.push(`gfield_checkbox_columns_${props.field.columns}`)
     }
@@ -265,70 +279,10 @@ const getCheckboxListClasses = () => {
 const getChoiceClasses = (choice, index) => {
   const classes = ['gchoice', `gchoice_${props.formId}_${props.field.id}_${index}`]
 
-  if (choice.disabled || props.field.disabled) {
-    classes.push('gchoice_disabled')
-  }
-
-  if (isChoiceSelected(choice.value)) {
-    classes.push('gchoice_selected')
-  }
+  if (choice.disabled || props.field.disabled) classes.push('gchoice_disabled')
+  if (isChoiceSelected(choice.value)) classes.push('gchoice_selected')
 
   return classes.join(' ')
-}
-
-const isChoiceSelected = (value) => {
-  return Array.isArray(props.modelValue) && props.modelValue.includes(value)
-}
-
-const isOtherSelected = () => {
-  return isChoiceSelected('gf_other_choice')
-}
-
-const hasAnySelection = () => {
-  return Array.isArray(props.modelValue) && props.modelValue.length > 0
-}
-
-// Check if this is a single-selection field
-const isSingleSelection = computed(() => {
-  // For multi_choice fields with radio inputType, always single selection
-  if (props.field.type === 'multi_choice' && props.field.inputType === 'radio') {
-    return true
-  }
-
-  // Check other single selection indicators
-  return props.field.maxSelections === 1 ||
-      props.field.inputType === 'single' ||
-      props.field.singleSelection === true ||
-      props.field.choiceLimit === 'single'
-})
-
-const handleChoiceChange = (value, checked) => {
-  let currentValues = Array.isArray(props.modelValue) ? [...props.modelValue] : []
-
-  if (isSingleSelection.value) {
-    // For single selection: only allow one value at a time
-    if (checked) {
-      currentValues = [value] // Replace any existing selection with this one
-    } else {
-      currentValues = [] // Uncheck removes the selection
-    }
-  } else {
-    // For multiple selection: normal checkbox behavior
-    if (checked) {
-      // Add value if not already present
-      if (!currentValues.includes(value)) {
-        currentValues.push(value)
-      }
-    } else {
-      // Remove value if present
-      const index = currentValues.indexOf(value)
-      if (index > -1) {
-        currentValues.splice(index, 1)
-      }
-    }
-  }
-
-  emit('update:modelValue', currentValues)
 }
 
 const getAriaDescribedBy = () => {

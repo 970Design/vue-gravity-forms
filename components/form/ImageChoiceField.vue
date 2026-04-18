@@ -35,11 +35,11 @@
         >
           <input
               :id="`choice_${formId}_${field.id}_${index}`"
-              type="radio"
-              :name="`input_${field.id}`"
+              :type="isRadioBacked ? 'radio' : 'checkbox'"
+              :name="isRadioBacked ? `input_${field.id}` : `input_${field.id}[]`"
               :value="choice.value"
-              :checked="modelValue === choice.value"
-              @change="$emit('update:modelValue', choice.value)"
+              :checked="isChoiceSelected(choice.value)"
+              @change="handleChoiceChange(choice.value, $event.target.checked)"
               :required="field.isRequired"
               :aria-required="field.isRequired"
               :aria-invalid="hasError"
@@ -53,7 +53,7 @@
               class="gfield_image_choice_label"
               :class="{
                 'gfield_image_choice_label_disabled': choice.disabled || field.disabled,
-                'gfield_image_choice_selected': modelValue === choice.value
+                'gfield_image_choice_selected': isChoiceSelected(choice.value)
               }"
           >
             <div class="gfield_image_choice_image_container">
@@ -86,9 +86,8 @@
               </span>
             </div>
 
-            <!-- Selection indicator -->
             <div
-                v-if="modelValue === choice.value"
+                v-if="isChoiceSelected(choice.value)"
                 class="gfield_image_choice_selected_indicator"
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -100,9 +99,8 @@
         </li>
       </ul>
 
-      <!-- "Other" option input if enabled -->
       <div
-          v-if="field.enableOtherChoice && modelValue === 'gf_other_choice'"
+          v-if="field.enableOtherChoice && isOtherSelected()"
           class="ginput_other_option"
       >
         <input
@@ -113,7 +111,7 @@
             :value="otherValue"
             @input="$emit('update:otherValue', $event.target.value)"
             class="gfield_image_choice_other_input"
-            :required="field.isRequired && modelValue === 'gf_other_choice'"
+            :required="field.isRequired && isOtherSelected()"
         />
       </div>
     </div>
@@ -145,8 +143,8 @@ const props = defineProps({
     required: true
   },
   modelValue: {
-    type: [String, Number],
-    default: ''
+    type: [String, Number, Array],
+    default: () => ''
   },
   formId: {
     type: [String, Number],
@@ -168,31 +166,61 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'update:otherValue'])
 
-// Check if this is a complex field
 const isComplexField = computed(() => {
   return ['image_choice'].includes(props.field.type)
 })
 
-// Determine if choice text should be shown
-const showChoiceText = computed(() => {
-  // Show text by default unless specifically hidden
-  return props.field.showChoiceText !== false
+const isRadioBacked = computed(() => {
+  return props.field.inputType !== 'checkbox'
 })
 
-// Determine if label should be hidden (but still rendered)
+const maxSelectableChoices = computed(() => {
+  const limit = props.field.choiceLimit
+  if (!limit || limit === 'unlimited') return Infinity
+  if (limit === 'single') return 1
+  const parsed = parseInt(limit, 10)
+  if (!isNaN(parsed)) return parsed
+  if (props.field.choiceLimitMax) return parseInt(props.field.choiceLimitMax, 10)
+  return Infinity
+})
+
+const showChoiceText = computed(() => {
+  return props.field.imageChoiceLabelVisibility !== 'hide'
+})
+
 const shouldHideLabel = computed(() => {
-  // Hide label if labelPlacement is set to hidden_label
-  if (props.field.labelPlacement === 'hidden_label') {
-    return true
-  }
-
-  // Hide label if field visibility is hidden or administrative
-  if (props.field.visibility === 'hidden' || props.field.visibility === 'administrative') {
-    return true
-  }
-
+  if (props.field.labelPlacement === 'hidden_label') return true
+  if (props.field.visibility === 'hidden' || props.field.visibility === 'administrative') return true
   return false
 })
+
+const isChoiceSelected = (value) => {
+  if (isRadioBacked.value) return props.modelValue === value
+  return Array.isArray(props.modelValue) && props.modelValue.includes(value)
+}
+
+const isOtherSelected = () => {
+  return isChoiceSelected('gf_other_choice')
+}
+
+const handleChoiceChange = (value, checked) => {
+  if (isRadioBacked.value) {
+    emit('update:modelValue', checked ? value : '')
+    return
+  }
+
+  let currentValues = Array.isArray(props.modelValue) ? [...props.modelValue] : []
+
+  if (checked) {
+    if (!currentValues.includes(value) && currentValues.length < maxSelectableChoices.value) {
+      currentValues.push(value)
+    }
+  } else {
+    currentValues = currentValues.filter(v => v !== value)
+  }
+
+  emit('update:modelValue', currentValues)
+}
 
 const getFieldClasses = () => {
   const classes = [
@@ -202,26 +230,11 @@ const getFieldClasses = () => {
     `gfield_visibility_${props.field.visibility || 'visible'}`
   ]
 
-  // Add label placement class
-  if (props.field.labelPlacement) {
-    classes.push(`field_${props.field.labelPlacement}`)
-  }
-
-  if (props.field.isRequired) {
-    classes.push('gfield_contains_required')
-  }
-
-  if (props.hasError) {
-    classes.push('gfield_error')
-  }
-
-  if (props.field.size) {
-    classes.push(`field_size_${props.field.size}`)
-  }
-
-  if (props.field.cssClass) {
-    classes.push(props.field.cssClass)
-  }
+  if (props.field.labelPlacement) classes.push(`field_${props.field.labelPlacement}`)
+  if (props.field.isRequired) classes.push('gfield_contains_required')
+  if (props.hasError) classes.push('gfield_error')
+  if (props.field.size) classes.push(`field_size_${props.field.size}`)
+  if (props.field.cssClass) classes.push(props.field.cssClass)
 
   return classes.join(' ')
 }
@@ -229,19 +242,15 @@ const getFieldClasses = () => {
 const getImageChoiceListClasses = () => {
   const classes = ['gfield_image_choice']
 
-  // Add layout classes based on field configuration
   if (props.field.choices && props.field.choices.length > 0) {
-    // Add columns class if specified
     if (props.field.columns && props.field.columns > 1) {
       classes.push(`gfield_image_choice_columns_${props.field.columns}`)
     }
-
-    // Add size class for images
-    if (props.field.imageChoiceSize) {
-      classes.push(`gfield_image_choice_size_${props.field.imageChoiceSize}`)
-    } else {
-      classes.push('gfield_image_choice_size_medium') // default size
-    }
+    classes.push(
+        props.field.imageChoiceSize
+            ? `gfield_image_choice_size_${props.field.imageChoiceSize}`
+            : 'gfield_image_choice_size_medium'
+    )
   }
 
   return classes.join(' ')
@@ -250,13 +259,8 @@ const getImageChoiceListClasses = () => {
 const getChoiceClasses = (choice, index) => {
   const classes = ['gchoice', `gchoice_${props.formId}_${props.field.id}_${index}`, 'gchoice_image']
 
-  if (choice.disabled || props.field.disabled) {
-    classes.push('gchoice_disabled')
-  }
-
-  if (choice.value === props.modelValue) {
-    classes.push('gchoice_selected')
-  }
+  if (choice.disabled || props.field.disabled) classes.push('gchoice_disabled')
+  if (isChoiceSelected(choice.value)) classes.push('gchoice_selected')
 
   return classes.join(' ')
 }

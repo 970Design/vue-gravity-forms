@@ -341,9 +341,11 @@ const fetchForm = async () => {
 
       if (isCheckboxFieldType(field.type) || isMultiselectFieldType(field.type)) {
         if (field.type === 'consent') {
-          initialData[fieldKey] = "";
+          initialData[fieldKey] = ''
+        } else if (['multi_choice', 'image_choice'].includes(field.type) && !isCheckboxBacked(field)) {
+          initialData[fieldKey] = '' // radio-backed: single string
         } else {
-          initialData[fieldKey] = [];
+          initialData[fieldKey] = [] // checkbox-backed or multiselect: array
         }
       } else if (isFileUploadFieldType(field.type)) {
         initialData[fieldKey] = null;
@@ -420,7 +422,13 @@ const resetForm = () => {
     const fieldKey = `input_${field.id}`;
 
     if (isCheckboxFieldType(field.type) || isMultiselectFieldType(field.type)) {
-      resetData[fieldKey] = [];
+      if (field.type === 'consent') {
+        resetData[fieldKey] = ''
+      } else if (['multi_choice', 'image_choice'].includes(field.type) && !isCheckboxBacked(field)) {
+        resetData[fieldKey] = ''
+      } else {
+        resetData[fieldKey] = []
+      }
     } else if (isFileUploadFieldType(field.type)) {
       resetData[fieldKey] = null;
     } else if (isAddressFieldType(field.type)) {
@@ -543,20 +551,19 @@ const performFormSubmission = async (recaptchaToken = null) => {
       return; // Skip other processing for file fields
     }
 
-    // Handle arrays (checkboxes, multiselect)
+    // Handle arrays (checkboxes, multiselect, checkbox-backed image_choice)
     if (Array.isArray(fieldValue)) {
-      if (field && isCheckboxFieldType(field.type)) {
+      if (field && (isCheckboxFieldType(field.type) || field.type === 'image_choice') && isCheckboxBacked(field)) {
         fieldValue.forEach(selectedValue => {
-          const choiceIndex = field.choices.findIndex(choice => choice.value === selectedValue);
+          const choiceIndex = field.choices.findIndex(choice => choice.value === selectedValue)
           if (choiceIndex !== -1) {
-            const indexedKey = `input_${fieldId}_${choiceIndex + 1}`;
-            fd.append(indexedKey, selectedValue);
+            fd.append(`input_${fieldId}_${choiceIndex + 1}`, selectedValue)
           }
-        });
+        })
       } else if (field && isMultiselectFieldType(field.type)) {
         fieldValue.forEach(selectedValue => {
-          fd.append(`input_${fieldId}[]`, selectedValue);
-        });
+          fd.append(`input_${fieldId}[]`, selectedValue)
+        })
       }
     }
     // Handle address and name objects
@@ -765,6 +772,8 @@ const isNameFieldType = (fieldType) => {
 const isHtmlFieldType = (fieldType) => {
   return ['html'].includes(fieldType);
 };
+
+const isCheckboxBacked = (field) => field.inputType === 'checkbox';
 
 onMounted(() => {
   if (!endpoint) {
@@ -1082,7 +1091,6 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
 
 <style>
 /* Variables */

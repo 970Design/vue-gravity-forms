@@ -52,6 +52,7 @@ const successMessage = ref("");
 const errorMessage = ref("");
 const fieldErrors = reactive({});
 const showForm = ref(true);
+const fetching = ref(true);
 
 const { fieldComponents } = useFieldComponents(props.customComponents);
 
@@ -374,8 +375,10 @@ const fetchForm = async () => {
     }
 
   } catch (error) {
-    console.error('Failed to load form:', error);
-    errorMessage.value = `Failed to load form: ${error.message}`;
+    console.error('Failed to load form:', error)
+    errorMessage.value = `Failed to load form: ${error.message}`
+  } finally {
+    fetching.value = false
   }
 };
 
@@ -790,8 +793,15 @@ onMounted(() => {
   <div class="gravity-form" :class="`gform_wrapper gform_wrapper_${formId}`">
     <div v-if="form" :id="`gform_${formId}`" class="gform_anchor" tabindex="-1"></div>
 
+    <div v-if="fetching" class="gform_skeleton">
+      <div class="gform_skeleton_field" v-for="n in 3" :key="n">
+        <div class="gform_skeleton_label"></div>
+        <div class="gform_skeleton_input"></div>
+      </div>
+    </div>
+
     <!-- Multi-step Progress Indicator -->
-    <div v-if="form && showForm && totalPages > 1" class="gform_progress_wrapper">
+    <div v-if="form && showForm && !fetching && totalPages > 1" class="gform_progress_wrapper">
       <div class="gform_progress_bar">
         <div class="gform_progress_fill" :style="{ width: progressPercentage + '%' }"></div>
       </div>
@@ -819,7 +829,7 @@ onMounted(() => {
 
     <!-- Show form when showForm is true -->
     <form
-        v-if="form && showForm"
+        v-if="form && showForm && !fetching"
         :id="`gform_${formId}`"
         class="gform_legacy_markup"
         @submit="submitForm"
@@ -1137,6 +1147,42 @@ onMounted(() => {
   list-style: none;
   padding: 0;
   margin: 0;
+}
+
+/* Skeleton (preloader) */
+.gform_skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.gform_skeleton_field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gform_skeleton_label {
+  height: 14px;
+  width: 140px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s infinite;
+}
+
+.gform_skeleton_input {
+  height: 42px;
+  width: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* Button Styles */

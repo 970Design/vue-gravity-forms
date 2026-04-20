@@ -48,7 +48,7 @@
     "vue-recaptcha-v3": "^2.0.1"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.1",
-    "vite": "^7.1.5"
+    "@vitejs/plugin-vue": "^6.0.6",
+    "vite": "^8.0.9"
   }
 }

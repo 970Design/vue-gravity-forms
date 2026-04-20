@@ -106,6 +106,9 @@ Fields, sections, and pages will automatically show or hide based on their defin
 
 This logic is handled reactively in Vue using the `useConditionalLogic` composable, ensuring seamless updates as users interact with the form.
 
+## Skeleton Preloader
+
+While the form schema is being fetched from WordPress, a skeleton preloader is displayed automatically — no additional setup required. The skeleton renders 3 animated placeholder fields that shimmer while the form loads, preventing layout shift and providing visual feedback to the user.
 
 ## Feature Roadmap
 

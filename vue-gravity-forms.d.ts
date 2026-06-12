@@ -72,6 +72,9 @@ declare module '@970design/vue-gravity-forms' {
         formId: string | number
         apiKey?: string
         recaptchaKey?: string
+        customComponents?: Record<string, any>
+        fieldValues?: Record<string, any>
+        scrollOnSubmit?: boolean
     }
 
     // Export component

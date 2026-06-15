@@ -40,6 +40,10 @@ const props = defineProps({
     type: Object,
     default: () => ({})
   },
+  scrollOnSubmit: {
+    type: Boolean,
+    default: false
+  },
 });
 
 let endpoint = props.endpoint;
@@ -53,6 +57,7 @@ const errorMessage = ref("");
 const fieldErrors = reactive({});
 const showForm = ref(true);
 const fetching = ref(true);
+const confirmationEl = ref(null);
 
 const { fieldComponents } = useFieldComponents(props.customComponents);
 
@@ -286,6 +291,15 @@ const goToPage = (pageNumber) => {
   }
 };
 
+// Scroll to confirmation/success message
+const scrollToConfirmation = () => {
+  nextTick(() => {
+    if (confirmationEl.value) {
+      confirmationEl.value.scrollIntoView({ block: 'start' });
+    }
+  });
+};
+
 // Scroll to form top
 const scrollToFormTop = () => {
   nextTick(() => {
@@ -389,10 +403,7 @@ const handleConfirmation = (response) => {
   if (!confirmation) {
     successMessage.value = response.message || "Form submitted successfully!";
     showForm.value = false;
-    return;
-  }
-
-  switch (confirmation.type) {
+  } else switch (confirmation.type) {
     case 'message':
       successMessage.value = confirmation.message || response.message || "Form submitted successfully!";
       showForm.value = false;
@@ -414,6 +425,8 @@ const handleConfirmation = (response) => {
       successMessage.value = response.message || "Form submitted successfully!";
       showForm.value = false;
   }
+
+  if (props.scrollOnSubmit && successMessage.value) scrollToConfirmation();
 };
 
 // Reset form to initial state
@@ -665,6 +678,7 @@ const performFormSubmission = async (recaptchaToken = null) => {
         });
       }
       errorMessage.value = data.message || data.error || `HTTP ${response.status}: ${responseText}`;
+      if (props.scrollOnSubmit) scrollToFirstError();
     }
   } catch (err) {
     console.error('Submission error:', err);
@@ -1079,7 +1093,7 @@ onMounted(() => {
     </form>
 
     <!-- Success/Confirmation Message -->
-    <div v-if="successMessage" class="gform_confirmation_wrapper">
+    <div ref="confirmationEl" v-if="successMessage" class="gform_confirmation_wrapper">
       <div :id="`gform_confirmation_message_${formId}`" class="gform_confirmation_message" v-html="successMessage">
       </div>
       <!-- Add a button to submit another response -->

@@ -112,6 +112,10 @@ This logic is handled reactively in Vue using the `useConditionalLogic` composab
 
 While the form schema is being fetched from WordPress, a skeleton preloader is displayed automatically — no additional setup required. The skeleton renders 3 animated placeholder fields that shimmer while the form loads, preventing layout shift and providing visual feedback to the user.
 
+## Grid Layout
+
+Fields are placed on Gravity Forms' 12-column layout grid using each field's `layoutGridColumnSpan`, with matching `gfield--width-*` classes and CSS Grid styling included by default — no additional setup required. Custom `.gform_fields`/`.gfield` CSS in your project should avoid overriding `display` at a higher specificity, or the grid layout won't take effect.
+
 ## Feature Roadmap
 
 - ~~Support for overriding field components~~

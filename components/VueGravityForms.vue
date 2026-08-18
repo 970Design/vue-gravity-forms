@@ -18,6 +18,7 @@ import HtmlField from "./form/HtmlField.vue";
 
 import { useFieldComponents } from './composables/useFieldComponents';
 import { useConditionalLogic } from './composables/useConditionalLogic';
+import { getGridColumnClass } from './composables/useGridClass';
 
 const props = defineProps({
   endpoint: {
@@ -1018,11 +1019,11 @@ onMounted(() => {
                 v-else-if="!isPageFieldType(field.type)"
                 :id="`field_${formId}_${field.id}`"
                 class="gfield"
-                :class="{
+                :class="[{
                 'gfield_error': fieldErrors[field.id],
                 'gfield_contains_required': field.isRequired,
                 [`gfield_contains_${field.type}`]: true
-              }"
+              }, getGridColumnClass(field)]"
             >
               <label :for="`input_${formId}_${field.id}`" class="gfield_label">
                 {{ field.label }}
@@ -1161,6 +1162,33 @@ onMounted(() => {
   list-style: none;
   padding: 0;
   margin: 0;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  column-gap: 16px;
+  row-gap: 16px;
+}
+
+/* Field width classes (mirrors Gravity Forms' own gfield--width-* naming) */
+.gform_body .gform_fields .gfield {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.gform_body .gform_fields .gfield--width-full { grid-column: span 12; }
+.gform_body .gform_fields .gfield--width-eleven-twelfths { grid-column: span 11; }
+.gform_body .gform_fields .gfield--width-five-sixths { grid-column: span 10; }
+.gform_body .gform_fields .gfield--width-three-quarter { grid-column: span 9; }
+.gform_body .gform_fields .gfield--width-two-thirds { grid-column: span 8; }
+.gform_body .gform_fields .gfield--width-seven-twelfths { grid-column: span 7; }
+.gform_body .gform_fields .gfield--width-half { grid-column: span 6; }
+.gform_body .gform_fields .gfield--width-five-twelfths { grid-column: span 5; }
+.gform_body .gform_fields .gfield--width-third { grid-column: span 4; }
+.gform_body .gform_fields .gfield--width-quarter { grid-column: span 3; }
+
+@media (max-width: 768px) {
+  .gform_body .gform_fields .gfield {
+    grid-column: 1 / -1;
+  }
 }
 
 /* Skeleton (preloader) */
@@ -1366,6 +1394,23 @@ onMounted(() => {
   margin: 30px 0;
   padding: 0;
   border: none;
+}
+
+.gsection_title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.3;
+}
+
+.gsection_description {
+  margin-bottom: 0.75rem;
+}
+
+.gsection hr {
+  border: none;
+  border-top: 1px solid var(--gf-border-color);
+  margin: 0 0 0.75rem 0;
 }
 
 /* Base Input Styles */

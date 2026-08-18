@@ -80,6 +80,7 @@
 
 <script setup>
 import { computed, watchEffect } from 'vue'
+import { getGridColumnClass } from '../composables/useGridClass'
 
 const props = defineProps({
   field: {
@@ -170,6 +171,11 @@ const getFieldClasses = () => {
 
   if (props.field.enhancedUI) {
     classes.push('gfield_select_enhanced')
+  }
+
+  const gridClass = getGridColumnClass(props.field)
+  if (gridClass) {
+    classes.push(gridClass)
   }
 
   return classes.join(' ')

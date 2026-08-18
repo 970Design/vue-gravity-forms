@@ -108,6 +108,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { getGridColumnClass } from '../composables/useGridClass'
 
 const props = defineProps({
   field: {
@@ -261,6 +262,11 @@ const getFieldClasses = () => {
     classes.push('gfield_contains_timepicker')
   } else if (props.field.type === 'datetime') {
     classes.push('gfield_contains_datetimepicker')
+  }
+
+  const gridClass = getGridColumnClass(props.field)
+  if (gridClass) {
+    classes.push(gridClass)
   }
 
   return classes.join(' ')

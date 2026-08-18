@@ -269,6 +269,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { getGridColumnClass } from '../composables/useGridClass'
 
 const props = defineProps({
   field: {
@@ -466,6 +467,11 @@ const getFieldClasses = () => {
 
   if (props.field.cssClass) {
     classes.push(props.field.cssClass)
+  }
+
+  const gridClass = getGridColumnClass(props.field)
+  if (gridClass) {
+    classes.push(gridClass)
   }
 
   return classes.join(' ')

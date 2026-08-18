@@ -4,11 +4,23 @@
       :class="getFieldClasses()"
       class="gfield gsection"
   >
+    <h2 v-if="field.label" class="gsection_title gfield_label">{{ field.label }}</h2>
+    <div
+        v-if="field.description && field.descriptionPlacement === 'above'"
+        class="gsection_description gfield_description description_above"
+        v-html="field.description"
+    ></div>
     <hr>
+    <div
+        v-if="field.description && field.descriptionPlacement !== 'above'"
+        class="gsection_description gfield_description description_below"
+        v-html="field.description"
+    ></div>
   </div>
 </template>
 
 <script setup>
+import { getGridColumnClass } from '../composables/useGridClass'
 
 const props = defineProps({
   field: {
@@ -33,6 +45,11 @@ const getFieldClasses = () => {
 
   if (props.field.cssClass) {
     classes.push(props.field.cssClass)
+  }
+
+  const gridClass = getGridColumnClass(props.field)
+  if (gridClass) {
+    classes.push(gridClass)
   }
 
   return classes.join(' ')

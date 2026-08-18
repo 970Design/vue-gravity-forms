@@ -1368,6 +1368,23 @@ onMounted(() => {
   border: none;
 }
 
+.gsection_title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.3;
+}
+
+.gsection_description {
+  margin-bottom: 0.75rem;
+}
+
+.gsection hr {
+  border: none;
+  border-top: 1px solid var(--gf-border-color);
+  margin: 0 0 0.75rem 0;
+}
+
 /* Base Input Styles */
 .ginput_container input[type="text"],
 .ginput_container input[type="email"],

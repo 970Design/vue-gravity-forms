@@ -85,6 +85,7 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { getGridColumnClass } from '../composables/useGridClass'
 
 const props = defineProps({
   field: {
@@ -235,6 +236,11 @@ const getFieldClasses = () => {
 
   if (isMultipleFiles.value) {
     classes.push("gfield_multiple_files");
+  }
+
+  const gridClass = getGridColumnClass(props.field);
+  if (gridClass) {
+    classes.push(gridClass);
   }
 
   return classes.join(" ");

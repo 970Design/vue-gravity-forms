@@ -38,6 +38,8 @@ declare module '@970design/vue-gravity-forms' {
         placeholder?: string
         enableOtherChoice?: boolean
         multipleFiles?: boolean
+        layoutGridColumnSpan?: number
+        cssClass?: string
         checkboxLabel?: string
         content?: string
         nextButton?: {

@@ -77,6 +77,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { getGridColumnClass } from '../composables/useGridClass'
 
 const props = defineProps({
   field: {
@@ -155,6 +156,11 @@ const getFieldClasses = () => {
   // Add specific textarea classes
   if (props.field.useRichTextEditor) {
     classes.push('gfield_contains_richtext')
+  }
+
+  const gridClass = getGridColumnClass(props.field)
+  if (gridClass) {
+    classes.push(gridClass)
   }
 
   return classes.join(' ')

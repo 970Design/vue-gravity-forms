@@ -1,5 +1,6 @@
 import { computed } from 'vue';
 import TextField from "../form/TextField.vue";
+import PhoneField from "../form/PhoneField.vue";
 import TextareaField from "../form/TextareaField.vue";
 import SelectField from "../form/SelectField.vue";
 import MultiselectField from "../form/MultiselectField.vue";
@@ -17,7 +18,7 @@ export function useFieldComponents(customComponents) {
 	const defaultComponents = {
 		text: TextField,
 		number: TextField,
-		phone: TextField,
+		phone: PhoneField,
 		website: TextField,
 		password: TextField,
 		email: TextField,

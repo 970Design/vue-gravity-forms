@@ -2,6 +2,7 @@
 import { ref, reactive, onMounted, nextTick, computed } from "vue";
 import { load } from 'recaptcha-v3';
 import TextField from "./form/TextField.vue";
+import PhoneField from "./form/PhoneField.vue";
 import TextareaField from "./form/TextareaField.vue";
 import SelectField from "./form/SelectField.vue";
 import MultiselectField from "./form/MultiselectField.vue";
@@ -732,7 +733,11 @@ const showFormAgain = () => {
 
 // Helper functions to check if field type should use the specific component
 const isTextFieldType = (fieldType) => {
-  return ['text', 'email', 'number', 'phone', 'website', 'password'].includes(fieldType);
+  return ['text', 'email', 'number', 'website', 'password'].includes(fieldType);
+};
+
+const isPhoneFieldType = (fieldType) => {
+  return ['phone'].includes(fieldType);
 };
 
 const isTextareaFieldType = (fieldType) => {
@@ -877,6 +882,16 @@ onMounted(() => {
             <!-- Text Field Component -->
             <TextField
                 v-if="isTextFieldType(field.type)"
+                :field="field"
+                :form-id="formId"
+                v-model="formData[`input_${field.id}`]"
+                :error-message="fieldErrors[field.id]"
+                :has-error="!!fieldErrors[field.id]"
+            />
+
+            <!-- Phone Field Component -->
+            <PhoneField
+                v-else-if="isPhoneFieldType(field.type)"
                 :field="field"
                 :form-id="formId"
                 v-model="formData[`input_${field.id}`]"
@@ -1480,6 +1495,207 @@ onMounted(() => {
   .gfield_contains_name .name_complex:has(.name_prefix) {
     grid-template-columns: 6.25rem 1fr 1fr;
   }
+}
+
+/* Phone Field (International/formatted). The country selector and number
+   input each keep their own full border (like an adjacent Bootstrap-style
+   input group) rather than a shared wrapper border — a shared border on the
+   flex row would stretch to enclose the below-placed sub-labels too, since
+   flex items default to align-items:stretch. Matches Gravity Forms core's
+   own technique (confirmed via its compiled theme CSS): each control is
+   independently bordered, adjoining corners flattened, borders collapsed
+   into one line via a -1px margin. */
+/* Reset the native browser <fieldset>/<legend> box model — PhoneField.vue
+   renders a <fieldset> for the formatted variant (for accessibility, to
+   match GF core), and browsers draw their own default border/padding
+   around it otherwise, which visually swallows the input row + sub-labels
+   into one box. */
+fieldset.gfield_contains_phone {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+fieldset.gfield_contains_phone > legend.gfield_label {
+  padding: 0;
+}
+
+.gform-phone {
+  position: relative;
+}
+
+.gform-phone--loading .gform-phone__country-selector,
+.gform-phone--loading .gform-phone__input {
+  opacity: 0.6;
+}
+
+.gform-phone__input-wrapper {
+  display: flex;
+  align-items: flex-start;
+}
+
+.ginput_country-selector_container {
+  flex-shrink: 0;
+}
+
+.gform-phone__country-selector {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 34px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--gf-border-color);
+  background-color: var(--gf-background-color);
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.gform-phone__country-selector:focus {
+  position: relative;
+  z-index: 1;
+  border-color: var(--gf-primary-color);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--gf-primary-color);
+}
+
+.gform-phone__country-selector:disabled {
+  color: var(--gf-disabled-color);
+  cursor: not-allowed;
+}
+
+.gform-phone__flag-icon {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.gform-phone__dial-code {
+  font-size: 0.875rem;
+}
+
+.ginput_phone_container {
+  flex: 1;
+  min-width: 0;
+}
+
+.gform-phone__input {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: 34px;
+  margin-left: -1px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--gf-border-color);
+  background-color: var(--gf-background-color);
+  font-family: inherit;
+}
+
+.gform-phone__input:focus {
+  position: relative;
+  z-index: 1;
+  border-color: var(--gf-primary-color);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--gf-primary-color);
+}
+
+.gform-phone__input:disabled {
+  color: var(--gf-disabled-color);
+  cursor: not-allowed;
+}
+
+.gform-field-label--type-sub {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--gf-disabled-color);
+}
+
+.gform-phone__dropdown {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  background-color: var(--gf-background-color);
+  border: 1px solid var(--gf-border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.gform-phone__search-wrapper {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--gf-border-color);
+}
+
+.gform-phone__search {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--gf-border-color);
+  font-family: inherit;
+}
+
+.gform-phone__search:focus {
+  border-color: var(--gf-primary-color);
+  outline: none;
+}
+
+.gform-phone__country-list {
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.gform-ul-reset {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gform-phone__country-list li button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gform-phone__country-list li button:hover,
+.gform-phone__country-list li[aria-selected="true"] button {
+  background-color: rgba(32, 76, 229, 0.08);
+}
+
+.gform-phone__country-name {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.gform-phone__no-results {
+  padding: 0.75rem;
+  color: var(--gf-disabled-color);
+  font-size: 0.875rem;
+}
+
+.gform-phone__aria-live,
+.gform-phone__aria-live-search-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Textarea Specific Styles */

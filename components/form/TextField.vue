@@ -111,8 +111,6 @@ const getInputType = () => {
       return 'email'
     case 'number':
       return 'number'
-    case 'phone':
-      return 'tel'
     case 'website':
       return 'url'
     case 'password':

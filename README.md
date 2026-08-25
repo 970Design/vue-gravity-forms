@@ -1,6 +1,6 @@
 # What is Vue Gravity Forms?
 
-Vue Gravity Forms is a [Vue](https://vuejs.org/) 3 component which allows you to render and process [Gravity Forms](https://www.gravityforms.com/) in a headless [WordPress](https://wordpress.org/) environment via the Companion [WordPress Plugin](https://github.com/970Design/nsz-vue-gravity-forms-plugin).  This component will work in any environment where Vue is supported (such as [Astro.js](https://astro.build/)).  Currently, it supports all Basic and Advanced field types, confirmation messages and redirects, file uploads, multipage forms, and (optionally) Google reCAPTCHA v3 with server-side verification.
+Vue Gravity Forms is a [Vue](https://vuejs.org/) 3 component which allows you to render and process [Gravity Forms](https://www.gravityforms.com/) in a headless [WordPress](https://wordpress.org/) environment via the Companion [WordPress Plugin](https://github.com/970Design/nsz-vue-gravity-forms-plugin).  This component will work in any environment where Vue is supported (such as [Astro.js](https://astro.build/)).  Currently, it supports all Basic and Advanced field types, confirmation messages and redirects, file uploads, multipage forms, and (optionally) Google reCAPTCHA v3 with server-side verification. **Gravity Forms 3.0 is fully supported**, including its new international Phone field format.
 
 ## Setup Guide
 
@@ -86,11 +86,6 @@ You can override any default form field component by passing custom components t
 | name | NameField |
 | html | HtmlField |
 
-`PhoneField` handles all three Gravity Forms phone formats: `standard` and
-`international` render a plain text input, while `formatted` (the default
-as of Gravity Forms 3.0 when a Phone field's format isn't explicitly set)
-renders the international country-selector UI.
-
 ### Custom Component Interface
 
 Custom components must implement the following props interface:
@@ -121,6 +116,19 @@ While the form schema is being fetched from WordPress, a skeleton preloader is d
 ## Grid Layout
 
 Fields are placed on Gravity Forms' 12-column layout grid using each field's `layoutGridColumnSpan`, with matching `gfield--width-*` classes and CSS Grid styling included by default — no additional setup required. Custom `.gform_fields`/`.gfield` CSS in your project should avoid overriding `display` at a higher specificity, or the grid layout won't take effect.
+
+## Gravity Forms 3.0 Support
+
+This package supports Gravity Forms 3.0, including its new international
+Phone field format (`phoneFormat: 'formatted'`, the default for any Phone
+field that doesn't explicitly set a format) — a searchable country
+selector with live number formatting and validation, rendered by
+`PhoneField` (see the field override table above). The phone-parsing
+library it uses ([libphonenumber-js](https://www.npmjs.com/package/libphonenumber-js))
+is lazy-loaded only when a form actually has a formatted Phone field, so
+it adds no bundle weight to forms that don't use one. The `standard` and
+`international` Phone formats continue to render as a plain text input,
+unchanged.
 
 ## Feature Roadmap
 

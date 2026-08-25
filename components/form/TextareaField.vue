@@ -104,6 +104,16 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 
+// GF 3.0 added `textareaHeight` (the form-editor setting renamed from
+// "Field Size" to "Field Height") for Textarea and Post Content fields
+// specifically. GF_Field_Textarea::get_field_input() prefers it over the
+// legacy `size`, falling back to 'medium' if neither is set — mirror that
+// precedence exactly. (Post Excerpt / Post Custom Field are NOT affected:
+// confirmed via their GF 3.0.3 source that they still only read `size`
+// despite the changelog wording, and this package doesn't implement
+// either field type yet regardless.)
+const textareaSize = computed(() => props.field.textareaHeight || props.field.size || 'medium')
+
 // Determine if label should be hidden (but still rendered for accessibility)
 const shouldHideLabel = computed(() => {
   // Hide label if labelPlacement is set to hidden_label
@@ -145,9 +155,7 @@ const getFieldClasses = () => {
     classes.push('gfield_error')
   }
 
-  if (props.field.size) {
-    classes.push(`field_size_${props.field.size}`)
-  }
+  classes.push(`field_size_${textareaSize.value}`)
 
   if (props.field.cssClass) {
     classes.push(props.field.cssClass)
@@ -167,12 +175,7 @@ const getFieldClasses = () => {
 }
 
 const getTextareaClasses = () => {
-  const classes = []
-
-  // Size classes
-  if (props.field.size) {
-    classes.push(props.field.size)
-  }
+  const classes = [textareaSize.value]
 
   // Rich text editor class
   if (props.field.useRichTextEditor) {

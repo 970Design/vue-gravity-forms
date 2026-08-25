@@ -71,6 +71,7 @@ You can override any default form field component by passing custom components t
 | Field Type | Component Name |
 |------------|----------------|
 | text | TextField |
+| phone | PhoneField |
 | textarea | TextareaField |
 | select | SelectField |
 | multiselect | MultiselectField |
@@ -84,6 +85,11 @@ You can override any default form field component by passing custom components t
 | image_choice | ImageChoiceField |
 | name | NameField |
 | html | HtmlField |
+
+`PhoneField` handles all three Gravity Forms phone formats: `standard` and
+`international` render a plain text input, while `formatted` (the default
+as of Gravity Forms 3.0 when a Phone field's format isn't explicitly set)
+renders the international country-selector UI.
 
 ### Custom Component Interface
 

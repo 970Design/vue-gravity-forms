@@ -137,6 +137,16 @@
 <script setup>
 import { computed } from 'vue'
 import { getGridColumnClass } from '../composables/useGridClass'
+// Mirrors GF 3.0's own GF_Field::get_field_choice_alignment() precedence.
+// 'columns' has no dedicated layout CSS in GF 3.0.3 itself (confirmed
+// against its compiled theme CSS and a live preview), so it's applied
+// for parity only. No legacy gf_list_{n}col fallback here — GF core
+// itself excludes Image Choice from that (it has its own image-grid
+// layout system, driven by imageChoiceSize below).
+const getChoiceAlignmentClasses = (field) => {
+  const alignment = field.choiceAlignment || (field.enableDisplayInColumns ? 'columns' : 'vertical')
+  return [`gfield--choice-align-${alignment}`]
+}
 
 const props = defineProps({
   field: {
@@ -237,6 +247,8 @@ const getFieldClasses = () => {
   if (props.field.size) classes.push(`field_size_${props.field.size}`)
   if (props.field.cssClass) classes.push(props.field.cssClass)
 
+  classes.push(...getChoiceAlignmentClasses(props.field))
+
   const gridClass = getGridColumnClass(props.field)
   if (gridClass) classes.push(gridClass)
 
@@ -247,9 +259,6 @@ const getImageChoiceListClasses = () => {
   const classes = ['gfield_image_choice']
 
   if (props.field.choices && props.field.choices.length > 0) {
-    if (props.field.columns && props.field.columns > 1) {
-      classes.push(`gfield_image_choice_columns_${props.field.columns}`)
-    }
     classes.push(
         props.field.imageChoiceSize
             ? `gfield_image_choice_size_${props.field.imageChoiceSize}`

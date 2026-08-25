@@ -48,6 +48,17 @@ declare module '@970design/vue-gravity-forms' {
         previousButton?: {
             text?: string
         }
+        // Phone field (type: 'phone') only. `phoneFormat` defaults to
+        // 'formatted' when unset (matches Gravity Forms 3.0's own
+        // server-side default) — 'standard'/'international' render as a
+        // plain text input, 'formatted' renders the international
+        // country-selector UI. The remaining properties only apply when
+        // `phoneFormat === 'formatted'`.
+        phoneFormat?: 'standard' | 'international' | 'formatted'
+        defaultCountry?: string
+        showCountryCode?: boolean
+        countrySublabel?: string
+        phoneSublabel?: string
     }
 
     // Form confirmation interface
@@ -85,6 +96,7 @@ declare module '@970design/vue-gravity-forms' {
 
 // Declare child components
 declare module '@/components/form/TextField.vue'
+declare module '@/components/form/PhoneField.vue'
 declare module '@/components/form/TextareaField.vue'
 declare module '@/components/form/SelectField.vue'
 declare module '@/components/form/MultiselectField.vue'

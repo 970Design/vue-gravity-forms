@@ -1465,6 +1465,48 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
+/* Choice Fields (Radio / Checkbox / Image Choice) — layout classes mirror
+   GF 3.0's own gfield--choice-align-* naming (GF_Field::get_field_choice_alignment()).
+   Only 'horizontal' has real layout CSS in GF 3.0.3 itself (confirmed
+   against its compiled theme CSS and a live preview) — 'columns' is
+   currently a no-op in GF core, so it's left inert here too rather than
+   inventing behavior GF doesn't have. The legacy gf_list_{n}col classes
+   (only ever added for pre-3.0 fields that still carry an explicit
+   `displayColumns`) do have real GF CSS, mirrored below. */
+.gfield--choice-align-horizontal .gfield_radio,
+.gfield--choice-align-horizontal .gfield_checkbox {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .gf_list_2col:not(.gfield--type-image_choice) .gfield_radio,
+  .gf_list_2col:not(.gfield--type-image_choice) .gfield_checkbox {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .gf_list_3col:not(.gfield--type-image_choice) .gfield_radio,
+  .gf_list_3col:not(.gfield--type-image_choice) .gfield_checkbox {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .gf_list_4col:not(.gfield--type-image_choice) .gfield_radio,
+  .gf_list_4col:not(.gfield--type-image_choice) .gfield_checkbox {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .gf_list_5col:not(.gfield--type-image_choice) .gfield_radio,
+  .gf_list_5col:not(.gfield--type-image_choice) .gfield_checkbox {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
 /* Address Field */
 .ginput_container_address {
   display: grid;

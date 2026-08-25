@@ -134,6 +134,25 @@
 <script setup>
 import { computed } from 'vue'
 import { getGridColumnClass } from '../composables/useGridClass'
+// Mirrors GF 3.0's own GF_Field::get_field_choice_alignment() precedence.
+// 'columns' has no dedicated layout CSS in GF 3.0.3 itself (confirmed
+// against its compiled theme CSS and a live preview) — the class is
+// still applied for parity, the legacy gf_list_{n}col fallback below is
+// what actually carries real columns CSS, for pre-3.0 fields that still
+// have an explicit `displayColumns`.
+const getChoiceAlignmentClasses = (field) => {
+  const alignment = field.choiceAlignment || (field.enableDisplayInColumns ? 'columns' : 'vertical')
+  const classes = [`gfield--choice-align-${alignment}`]
+
+  if (alignment === 'columns') {
+    const columns = Number(field.displayColumns)
+    if ([2, 3, 4, 5].includes(columns)) {
+      classes.push(`gf_list_${columns}col`)
+    }
+  }
+
+  return classes
+}
 
 const props = defineProps({
   field: {
@@ -259,6 +278,10 @@ const getFieldClasses = () => {
   if (props.field.size) classes.push(`field_size_${props.field.size}`)
   if (props.field.cssClass) classes.push(props.field.cssClass)
 
+  if (!isConsentField.value) {
+    classes.push(...getChoiceAlignmentClasses(props.field))
+  }
+
   const gridClass = getGridColumnClass(props.field)
   if (gridClass) classes.push(gridClass)
 
@@ -267,15 +290,6 @@ const getFieldClasses = () => {
 
 const getCheckboxListClasses = () => {
   const classes = ['gfield_checkbox']
-
-  if (props.field.choices && props.field.choices.length > 0) {
-    if (props.field.choiceDirection === 'horizontal') {
-      classes.push('gfield_checkbox_horizontal')
-    }
-    if (props.field.columns && props.field.columns > 1) {
-      classes.push(`gfield_checkbox_columns_${props.field.columns}`)
-    }
-  }
 
   return classes.join(' ')
 }

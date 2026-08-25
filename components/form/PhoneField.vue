@@ -321,8 +321,15 @@ const updateModelValue = () => {
   try {
     const phoneNumber = phoneLib.parsePhoneNumberFromString(nationalInput.value, selectedCountry.value)
     if (phoneNumber && phoneNumber.isValid()) {
+      // A +-prefixed number carries its own country, which can differ from the
+      // selector (e.g. +44 pasted while the chip shows US). Trust the parsed
+      // country and sync the selector to it, like GF core's own widget.
+      const country = phoneNumber.country || selectedCountry.value
+      if (country !== selectedCountry.value) {
+        selectedCountry.value = country
+      }
       emitValue(JSON.stringify({
-        country: selectedCountry.value,
+        country,
         national: phoneNumber.formatNational(),
         formatted: phoneNumber.formatInternational(),
         e164: phoneNumber.format('E.164')

@@ -56,6 +56,7 @@
               :for="`input_${formId}_${field.id}_2`"
               :id="`input_${formId}_${field.id}_2_label`"
               class="gfield_label ginput_label"
+              :class="getSubLabelClass()"
           >
             {{ getNameFieldLabel('prefix') }}
             <span v-if="isNameFieldRequired('prefix')" class="gfield_required">
@@ -111,6 +112,7 @@
               :for="`input_${formId}_${field.id}_3`"
               :id="`input_${formId}_${field.id}_3_label`"
               class="gfield_label ginput_label"
+              :class="getSubLabelClass()"
           >
             {{ getNameFieldLabel('first') }}
             <span v-if="isNameFieldRequired('first')" class="gfield_required">
@@ -143,6 +145,7 @@
               :for="`input_${formId}_${field.id}_4`"
               :id="`input_${formId}_${field.id}_4_label`"
               class="gfield_label ginput_label"
+              :class="getSubLabelClass()"
           >
             {{ getNameFieldLabel('middle') }}
             <span v-if="isNameFieldRequired('middle')" class="gfield_required">
@@ -175,6 +178,7 @@
               :for="`input_${formId}_${field.id}_6`"
               :id="`input_${formId}_${field.id}_6_label`"
               class="gfield_label ginput_label"
+              :class="getSubLabelClass()"
           >
             {{ getNameFieldLabel('last') }}
             <span v-if="isNameFieldRequired('last')" class="gfield_required">
@@ -207,6 +211,7 @@
               :for="`input_${formId}_${field.id}_8`"
               :id="`input_${formId}_${field.id}_8_label`"
               class="gfield_label ginput_label"
+              :class="getSubLabelClass()"
           >
             {{ getNameFieldLabel('suffix') }}
             <span v-if="isNameFieldRequired('suffix')" class="gfield_required">
@@ -403,6 +408,11 @@ const getNameFieldLabel = (fieldName) => {
   return defaultLabels[fieldName] || fieldName
 }
 
+// Class applied to each sub-label when Sub-Label Placement is set to hidden
+const getSubLabelClass = () => {
+  return props.field.subLabelPlacement === 'hidden_label' ? 'hidden_sub_label screen-reader-text' : ''
+}
+
 // Get placeholder for name field
 const getNameFieldPlaceholder = (fieldName) => {
   const inputIndex = inputIndexMap[fieldName]
@@ -466,7 +476,7 @@ const getFieldClasses = () => {
   ]
 
   if (props.field.labelPlacement) {
-    classes.push(`field_${props.field.labelPlacement}`)
+    classes.push(props.field.labelPlacement)
   }
 
   if (props.field.isRequired) {

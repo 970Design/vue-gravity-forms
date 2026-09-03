@@ -473,7 +473,7 @@ const getFieldClasses = () => {
   ]
 
   if (props.field.labelPlacement) {
-    classes.push(`field_${props.field.labelPlacement}`)
+    classes.push(props.field.labelPlacement)
   }
 
   if (props.field.isRequired) {

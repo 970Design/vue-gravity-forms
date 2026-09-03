@@ -48,6 +48,7 @@
             :value="getAddressValue('street')"
             @input="updateAddressField('street', $event.target.value)"
             :class="getInputClasses()"
+            :placeholder="getAddressFieldPlaceholder('street')"
             :required="isAddressFieldRequired('street')"
             :aria-required="isAddressFieldRequired('street')"
             :aria-invalid="hasError"
@@ -78,6 +79,7 @@
             :value="getAddressValue('street2')"
             @input="updateAddressField('street2', $event.target.value)"
             :class="getInputClasses()"
+            :placeholder="getAddressFieldPlaceholder('street2')"
             :required="isAddressFieldRequired('street2')"
             :aria-required="isAddressFieldRequired('street2')"
             :aria-invalid="hasError"
@@ -108,6 +110,7 @@
             :value="getAddressValue('city')"
             @input="updateAddressField('city', $event.target.value)"
             :class="getInputClasses()"
+            :placeholder="getAddressFieldPlaceholder('city')"
             :required="isAddressFieldRequired('city')"
             :aria-required="isAddressFieldRequired('city')"
             :aria-invalid="hasError"
@@ -162,6 +165,7 @@
             :value="getAddressValue('state')"
             @input="updateAddressField('state', $event.target.value)"
             :class="getInputClasses()"
+            :placeholder="getAddressFieldPlaceholder('state')"
             :required="isAddressFieldRequired('state')"
             :aria-required="isAddressFieldRequired('state')"
             :aria-invalid="hasError"
@@ -192,6 +196,7 @@
             :value="getAddressValue('zip')"
             @input="updateAddressField('zip', $event.target.value)"
             :class="getInputClasses()"
+            :placeholder="getAddressFieldPlaceholder('zip')"
             :required="isAddressFieldRequired('zip')"
             :aria-required="isAddressFieldRequired('zip')"
             :aria-invalid="hasError"
@@ -246,6 +251,7 @@
             :value="getAddressValue('country')"
             @input="updateAddressField('country', $event.target.value)"
             :class="getInputClasses()"
+            :placeholder="getAddressFieldPlaceholder('country')"
             :required="isAddressFieldRequired('country')"
             :aria-required="isAddressFieldRequired('country')"
             :aria-invalid="hasError"
@@ -407,6 +413,17 @@ const getAddressFieldLabel = (fieldName) => {
 
   // Return default label
   return defaultLabels[fieldName] || fieldName
+}
+
+// Get placeholder for address field
+const getAddressFieldPlaceholder = (fieldName) => {
+  const inputIndex = inputIndexMap[fieldName]
+
+  if (props.field.inputs && props.field.inputs[inputIndex]) {
+    return props.field.inputs[inputIndex].placeholder || ''
+  }
+
+  return ''
 }
 
 // Get choices for dropdown fields (state/country)

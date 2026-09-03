@@ -92,6 +92,7 @@
               :value="getNameValue('prefix')"
               @input="updateNameField('prefix', $event.target.value)"
               :class="getInputClasses()"
+              :placeholder="getNameFieldPlaceholder('prefix')"
               :required="isNameFieldRequired('prefix')"
               :aria-required="isNameFieldRequired('prefix')"
               :aria-invalid="hasError"
@@ -123,6 +124,7 @@
               :value="getNameValue('first')"
               @input="updateNameField('first', $event.target.value)"
               :class="getInputClasses()"
+              :placeholder="getNameFieldPlaceholder('first')"
               :required="isNameFieldRequired('first')"
               :aria-required="isNameFieldRequired('first')"
               :aria-invalid="hasError"
@@ -154,6 +156,7 @@
               :value="getNameValue('middle')"
               @input="updateNameField('middle', $event.target.value)"
               :class="getInputClasses()"
+              :placeholder="getNameFieldPlaceholder('middle')"
               :required="isNameFieldRequired('middle')"
               :aria-required="isNameFieldRequired('middle')"
               :aria-invalid="hasError"
@@ -185,6 +188,7 @@
               :value="getNameValue('last')"
               @input="updateNameField('last', $event.target.value)"
               :class="getInputClasses()"
+              :placeholder="getNameFieldPlaceholder('last')"
               :required="isNameFieldRequired('last')"
               :aria-required="isNameFieldRequired('last')"
               :aria-invalid="hasError"
@@ -239,6 +243,7 @@
               :value="getNameValue('suffix')"
               @input="updateNameField('suffix', $event.target.value)"
               :class="getInputClasses()"
+              :placeholder="getNameFieldPlaceholder('suffix')"
               :required="isNameFieldRequired('suffix')"
               :aria-required="isNameFieldRequired('suffix')"
               :aria-invalid="hasError"
@@ -396,6 +401,17 @@ const getNameFieldLabel = (fieldName) => {
   }
 
   return defaultLabels[fieldName] || fieldName
+}
+
+// Get placeholder for name field
+const getNameFieldPlaceholder = (fieldName) => {
+  const inputIndex = inputIndexMap[fieldName]
+
+  if (props.field.inputs && props.field.inputs[inputIndex]) {
+    return props.field.inputs[inputIndex].placeholder || ''
+  }
+
+  return ''
 }
 
 // Get choices for dropdown fields (prefix/suffix)

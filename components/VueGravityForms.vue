@@ -1319,8 +1319,10 @@ onMounted(() => {
 }
 
 /* Hidden Label Styles */
-.field_hidden_label > .gfield_label,
-.field_hidden_label > legend.gfield_label {
+.hidden_label > .gfield_label,
+.hidden_label > legend.gfield_label,
+.hidden_sub_label,
+.screen-reader-text {
   position: absolute;
   left: -10000px;
   top: auto;
@@ -1329,12 +1331,12 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.field_hidden_label > .ginput_container {
+.hidden_label > .ginput_container {
   margin-top: 0;
 }
 
 /* Consent Field Special Handling */
-.field_hidden_label.gfield_contains_consent .gfield_consent_description {
+.hidden_label.gfield_contains_consent .gfield_consent_description {
   position: static;
   left: auto;
   top: auto;

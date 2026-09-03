@@ -241,7 +241,7 @@ const getFieldClasses = () => {
     `gfield_visibility_${props.field.visibility || 'visible'}`
   ]
 
-  if (props.field.labelPlacement) classes.push(`field_${props.field.labelPlacement}`)
+  if (props.field.labelPlacement) classes.push(props.field.labelPlacement)
   if (props.field.isRequired) classes.push('gfield_contains_required')
   if (props.hasError) classes.push('gfield_error')
   if (props.field.size) classes.push(`field_size_${props.field.size}`)

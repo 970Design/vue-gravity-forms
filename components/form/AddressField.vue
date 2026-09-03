@@ -35,6 +35,7 @@
             :for="`input_${formId}_${field.id}_1`"
             :id="`input_${formId}_${field.id}_1_label`"
             class="gfield_label ginput_label"
+            :class="getSubLabelClass()"
         >
           {{ getAddressFieldLabel('street') }}
           <span v-if="isAddressFieldRequired('street')" class="gfield_required">
@@ -48,6 +49,7 @@
             :value="getAddressValue('street')"
             @input="updateAddressField('street', $event.target.value)"
             :class="getInputClasses()"
+            :placeholder="getAddressFieldPlaceholder('street')"
             :required="isAddressFieldRequired('street')"
             :aria-required="isAddressFieldRequired('street')"
             :aria-invalid="hasError"
@@ -65,6 +67,7 @@
             :for="`input_${formId}_${field.id}_2`"
             :id="`input_${formId}_${field.id}_2_label`"
             class="gfield_label ginput_label"
+            :class="getSubLabelClass()"
         >
           {{ getAddressFieldLabel('street2') }}
           <span v-if="isAddressFieldRequired('street2')" class="gfield_required">
@@ -78,6 +81,7 @@
             :value="getAddressValue('street2')"
             @input="updateAddressField('street2', $event.target.value)"
             :class="getInputClasses()"
+            :placeholder="getAddressFieldPlaceholder('street2')"
             :required="isAddressFieldRequired('street2')"
             :aria-required="isAddressFieldRequired('street2')"
             :aria-invalid="hasError"
@@ -95,6 +99,7 @@
             :for="`input_${formId}_${field.id}_3`"
             :id="`input_${formId}_${field.id}_3_label`"
             class="gfield_label ginput_label"
+            :class="getSubLabelClass()"
         >
           {{ getAddressFieldLabel('city') }}
           <span v-if="isAddressFieldRequired('city')" class="gfield_required">
@@ -108,6 +113,7 @@
             :value="getAddressValue('city')"
             @input="updateAddressField('city', $event.target.value)"
             :class="getInputClasses()"
+            :placeholder="getAddressFieldPlaceholder('city')"
             :required="isAddressFieldRequired('city')"
             :aria-required="isAddressFieldRequired('city')"
             :aria-invalid="hasError"
@@ -125,6 +131,7 @@
             :for="`input_${formId}_${field.id}_4`"
             :id="`input_${formId}_${field.id}_4_label`"
             class="gfield_label ginput_label"
+            :class="getSubLabelClass()"
         >
           {{ getAddressFieldLabel('state') }}
           <span v-if="isAddressFieldRequired('state')" class="gfield_required">
@@ -162,6 +169,7 @@
             :value="getAddressValue('state')"
             @input="updateAddressField('state', $event.target.value)"
             :class="getInputClasses()"
+            :placeholder="getAddressFieldPlaceholder('state')"
             :required="isAddressFieldRequired('state')"
             :aria-required="isAddressFieldRequired('state')"
             :aria-invalid="hasError"
@@ -179,6 +187,7 @@
             :for="`input_${formId}_${field.id}_5`"
             :id="`input_${formId}_${field.id}_5_label`"
             class="gfield_label ginput_label"
+            :class="getSubLabelClass()"
         >
           {{ getAddressFieldLabel('zip') }}
           <span v-if="isAddressFieldRequired('zip')" class="gfield_required">
@@ -192,6 +201,7 @@
             :value="getAddressValue('zip')"
             @input="updateAddressField('zip', $event.target.value)"
             :class="getInputClasses()"
+            :placeholder="getAddressFieldPlaceholder('zip')"
             :required="isAddressFieldRequired('zip')"
             :aria-required="isAddressFieldRequired('zip')"
             :aria-invalid="hasError"
@@ -209,6 +219,7 @@
             :for="`input_${formId}_${field.id}_6`"
             :id="`input_${formId}_${field.id}_6_label`"
             class="gfield_label ginput_label"
+            :class="getSubLabelClass()"
         >
           {{ getAddressFieldLabel('country') }}
           <span v-if="isAddressFieldRequired('country')" class="gfield_required">
@@ -246,6 +257,7 @@
             :value="getAddressValue('country')"
             @input="updateAddressField('country', $event.target.value)"
             :class="getInputClasses()"
+            :placeholder="getAddressFieldPlaceholder('country')"
             :required="isAddressFieldRequired('country')"
             :aria-required="isAddressFieldRequired('country')"
             :aria-invalid="hasError"
@@ -409,6 +421,22 @@ const getAddressFieldLabel = (fieldName) => {
   return defaultLabels[fieldName] || fieldName
 }
 
+// Class applied to each sub-label when Sub-Label Placement is set to hidden
+const getSubLabelClass = () => {
+  return props.field.subLabelPlacement === 'hidden_label' ? 'hidden_sub_label screen-reader-text' : ''
+}
+
+// Get placeholder for address field
+const getAddressFieldPlaceholder = (fieldName) => {
+  const inputIndex = inputIndexMap[fieldName]
+
+  if (props.field.inputs && props.field.inputs[inputIndex]) {
+    return props.field.inputs[inputIndex].placeholder || ''
+  }
+
+  return ''
+}
+
 // Get choices for dropdown fields (state/country)
 const getAddressFieldChoices = (fieldName) => {
   const inputIndex = inputIndexMap[fieldName]
@@ -445,7 +473,7 @@ const getFieldClasses = () => {
 
   // Add label placement class
   if (props.field.labelPlacement) {
-    classes.push(`field_${props.field.labelPlacement}`)
+    classes.push(props.field.labelPlacement)
   }
 
   if (props.field.isRequired) {

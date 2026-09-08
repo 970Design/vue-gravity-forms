@@ -20,7 +20,7 @@ import HtmlField from "./form/HtmlField.vue";
 import { useFieldComponents } from './composables/useFieldComponents';
 import { useConditionalLogic } from './composables/useConditionalLogic';
 import { getGridColumnClass } from './composables/useGridClass';
-import { sharedJson } from './composables/useSharedFetch';
+import { sharedJson, cloneJson } from './composables/useSharedFetch';
 
 const props = defineProps({
   endpoint: {
@@ -333,7 +333,7 @@ const fetchForm = async () => {
     // Shared across every instance of this form on the page (see
     // composables/useSharedFetch.js). Each instance gets its own copy, since the
     // field objects are mutated during rendering/validation.
-    const formResponse = structuredClone(
+    const formResponse = cloneJson(
       await sharedJson(`form:${endpoint}:${formId}:${apiKey || ''}`, async () => {
         const response = await fetch(`${endpoint}/wp-json/gf-headless/v1/forms/${formId}`, {
           method: 'GET',

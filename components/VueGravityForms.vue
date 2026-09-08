@@ -20,6 +20,7 @@ import HtmlField from "./form/HtmlField.vue";
 import { useFieldComponents } from './composables/useFieldComponents';
 import { useConditionalLogic } from './composables/useConditionalLogic';
 import { getGridColumnClass } from './composables/useGridClass';
+import { sharedJson } from './composables/useSharedFetch';
 
 const props = defineProps({
   endpoint: {
@@ -66,14 +67,20 @@ const { fieldComponents } = useFieldComponents(props.customComponents);
 const recaptchaConfig = ref({ enabled: false, site_key: '' });
 const fetchRecaptchaConfig = async () => {
   try {
-    const response = await fetch(`${endpoint}/wp-json/gf-headless/v1/recaptcha/config`, {
-      method: 'GET',
-      headers: getApiHeaders(),
+    // shared across every form instance on the page (see composables/useSharedFetch.js)
+    const data = await sharedJson(`recaptcha:${endpoint}:${apiKey || ''}`, async () => {
+      const response = await fetch(`${endpoint}/wp-json/gf-headless/v1/recaptcha/config`, {
+        method: 'GET',
+        headers: getApiHeaders(),
+      });
+
+      if (!response.ok) return null;
+
+      return response.json();
     });
 
-    if (!response.ok) return;
+    if (!data) return;
 
-    const data = await response.json();
     recaptchaConfig.value = data;
   } catch (error) {
     console.error('Failed to fetch reCAPTCHA config:', error);
@@ -323,26 +330,33 @@ const progressPercentage = computed(() => {
 // Fetch form schema using the new secure endpoint
 const fetchForm = async () => {
   try {
-    const response = await fetch(`${endpoint}/wp-json/gf-headless/v1/forms/${formId}`, {
-      method: 'GET',
-      headers: getApiHeaders(),
-    });
+    // Shared across every instance of this form on the page (see
+    // composables/useSharedFetch.js). Each instance gets its own copy, since the
+    // field objects are mutated during rendering/validation.
+    const formResponse = structuredClone(
+      await sharedJson(`form:${endpoint}:${formId}:${apiKey || ''}`, async () => {
+        const response = await fetch(`${endpoint}/wp-json/gf-headless/v1/forms/${formId}`, {
+          method: 'GET',
+          headers: getApiHeaders(),
+        });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API Error Response:', errorText);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('API Error Response:', errorText);
 
-      let errorData;
-      try {
-        errorData = JSON.parse(errorText);
-      } catch (e) {
-        errorData = {message: errorText};
-      }
+          let errorData;
+          try {
+            errorData = JSON.parse(errorText);
+          } catch (e) {
+            errorData = {message: errorText};
+          }
 
-      throw new Error(`HTTP ${response.status}: ${errorData.message || errorText}`);
-    }
+          throw new Error(`HTTP ${response.status}: ${errorData.message || errorText}`);
+        }
 
-    const formResponse = await response.json();
+        return response.json();
+      })
+    );
     form.value = formResponse;
 
     // Organize fields into pages

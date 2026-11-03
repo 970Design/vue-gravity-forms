@@ -6,6 +6,13 @@
   >
     <!-- Consent Field Template -->
     <template v-if="isConsentField">
+      <legend v-if="field.label && field.checkboxLabel" class="gfield_label">
+        {{ field.label }}
+        <span v-if="field.isRequired" class="gfield_required">
+          <span class="gfield_required_asterisk">*</span>
+        </span>
+      </legend>
+
       <div class="ginput_container ginput_container_consent">
         <div class="gfield_consent_label">
           <input
